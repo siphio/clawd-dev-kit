@@ -7,6 +7,39 @@ argument-hint: [capability-name]
 
 You are creating a comprehensive implementation plan for a Clawdbot capability. This is the most critical phase - the plan must contain ALL information needed for one-pass implementation.
 
+---
+
+## ⚠️ CRITICAL: Line Limits (Context Bloat Prevention)
+
+**Phase plans MUST be 500-700 lines. NEVER exceed 700 lines.**
+
+This is a HARD LIMIT. Exceeding this causes context bloat and degrades performance.
+
+### Enforcement Rules:
+- **Minimum**: 500 lines (ensure sufficient detail)
+- **Target**: 550-650 lines (ideal)
+- **Maximum**: 700 lines (HARD CAP - DO NOT EXCEED)
+- **Validation**: Count lines before saving - `wc -l ./docs/plans/plan-phase-X.md`
+
+### How to Stay Within Limits:
+- Use concise bullet points, not verbose prose
+- Use tables for structured data (endpoints, parameters, etc.)
+- Include ONLY actionable content - no filler or explanations
+- Code examples: Show ONE example per pattern, not multiple
+- Skip obvious details - focus on decisions and specifics
+- Reference PRD sections instead of repeating content
+
+### If Plan Exceeds 700 Lines:
+1. STOP and review for bloat
+2. Cut redundant explanations
+3. Consolidate similar sections
+4. Move detailed code to execute phase (plans describe WHAT, execute does HOW)
+5. If still over: split the phase into smaller phases
+
+**A bloated plan is worse than a concise one. Density > Length.**
+
+---
+
 ## Critical Context
 
 **MANDATORY READS**:
@@ -19,7 +52,7 @@ You are creating a comprehensive implementation plan for a Clawdbot capability. 
 - No code during planning - Research and design only
 - Sub-agents handle deep research in parallel
 - Human validates before execution begins
-- Target: 500-700 lines of dense, actionable content
+- **500-700 lines MAXIMUM** - enforce ruthlessly
 
 ---
 
@@ -840,7 +873,26 @@ Save the complete plan to:
 
 Where [X] is the phase number (e.g., `plan-phase-1.md`, `plan-phase-2.md`).
 
-### 7.2 Update STATE.md
+### 7.2 Validate Line Count (MANDATORY)
+
+**Before proceeding, verify the plan is within limits:**
+
+```bash
+LINE_COUNT=$(wc -l < ./docs/plans/plan-phase-[X].md)
+echo "Plan line count: $LINE_COUNT"
+
+if [ $LINE_COUNT -gt 700 ]; then
+    echo "❌ FAILED: Plan exceeds 700 lines ($LINE_COUNT). MUST reduce."
+elif [ $LINE_COUNT -lt 500 ]; then
+    echo "⚠️ WARNING: Plan under 500 lines ($LINE_COUNT). May lack detail."
+else
+    echo "✅ PASSED: Plan within 500-700 line limit."
+fi
+```
+
+**If over 700 lines**: DO NOT PROCEED. Go back and cut content until under 700.
+
+### 7.3 Update STATE.md
 
 **CRITICAL**: Update `docs/STATE.md` to track progress:
 

@@ -21,7 +21,25 @@ Can this be done with SOUL.md behavioral rules?
                     └─ NO → Create TypeScript skill (last resort)
 ```
 
-### 1.2 Proactivity is Mandatory
+### 1.2 Document Line Limits (Context Bloat Prevention)
+
+**HARD LIMITS - Strictly enforced to prevent context bloat:**
+
+| Document | Minimum | Target | Maximum |
+|----------|---------|--------|---------|
+| `docs/PRD.md` | - | 600-800 | **1000** |
+| `docs/plans/plan-phase-X.md` | 500 | 550-650 | **700** |
+
+**Enforcement:**
+- Validate with `wc -l` before finalizing any document
+- If PRD exceeds 1000 lines: scope is too large, split capability
+- If plan exceeds 700 lines: cut content, move detail to execute phase
+- Use bullet points, tables, and concise language
+- Never duplicate content that can be referenced
+
+**Why this matters:** Context bloat degrades AI performance. Dense, concise documents enable better execution.
+
+### 1.3 Proactivity is Mandatory
 
 Every Clawdbot capability MUST define its proactivity model:
 - **Reactive Only**: Responds only when messaged (rare for capabilities)

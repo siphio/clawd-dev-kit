@@ -7,6 +7,31 @@ argument-hint: [capability-description]
 
 You are creating a comprehensive Product Requirements Document and initializing the full project structure including the deployable `workspace/` folder.
 
+---
+
+## ⚠️ CRITICAL: Line Limits (Context Bloat Prevention)
+
+**PRD.md MUST NOT exceed 1000 lines.**
+
+This is a HARD LIMIT. Exceeding this causes context bloat and degrades performance.
+
+### Enforcement Rules:
+- **Maximum**: 1000 lines for PRD.md
+- **Target**: 600-800 lines (ideal)
+- **If exceeding**: Ruthlessly cut verbose sections, use tables instead of prose
+- **Validation**: Count lines before finalizing - `wc -l ./docs/PRD.md`
+
+### How to Stay Under Limit:
+- Use bullet points, not paragraphs
+- Use tables for structured data
+- Keep phase descriptions to 5-10 lines each
+- Omit obvious details - focus on what's unique
+- Reference external docs instead of duplicating content
+
+**If you cannot fit requirements in 1000 lines, the scope is too large - split into multiple capabilities.**
+
+---
+
 ## Project Structure Overview
 
 ```
@@ -584,6 +609,36 @@ After creating the PRD, update `docs/STATE.md` with:
 # Update STATE.md with actual values from PRD
 # Replace placeholders with real data
 ```
+
+---
+
+## Step 6: Validate Line Counts (MANDATORY)
+
+**Before finalizing, verify all documents are within limits:**
+
+```bash
+echo "=== Line Count Validation ==="
+
+PRD_LINES=$(wc -l < ./docs/PRD.md)
+echo "PRD.md: $PRD_LINES lines"
+
+if [ $PRD_LINES -gt 1000 ]; then
+    echo "❌ FAILED: PRD exceeds 1000 lines. MUST reduce before proceeding."
+    echo "   Target: 600-800 lines. Current: $PRD_LINES"
+    exit 1
+elif [ $PRD_LINES -gt 800 ]; then
+    echo "⚠️ WARNING: PRD is $PRD_LINES lines. Consider trimming."
+else
+    echo "✅ PASSED: PRD within limit."
+fi
+```
+
+**If PRD exceeds 1000 lines**: DO NOT PROCEED. Go back and:
+1. Convert prose to bullet points
+2. Use tables instead of paragraphs
+3. Remove redundant explanations
+4. Keep phase descriptions to 5-10 lines each
+5. If still over: scope is too large, split into multiple capabilities
 
 ---
 

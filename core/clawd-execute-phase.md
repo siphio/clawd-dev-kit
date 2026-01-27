@@ -13,9 +13,9 @@ You are implementing a specific phase of a Clawdbot capability. **All changes go
 docs/                           workspace/
 (Reference - don't deploy)      (Live - gets deployed)
 ─────────────────────────       ─────────────────────────
-docs/PRD.md           ◄──READ
-docs/phase-X-plan.md  ◄──READ
-docs/test-cases.md    ◄──READ
+docs/PRD.md                  ◄──READ
+docs/plans/plan-phase-X.md   ◄──READ
+docs/test-cases.md           ◄──READ
                                 workspace/SOUL.md      ◄──EDIT
                                 workspace/TOOLS.md     ◄──EDIT
                                 workspace/AGENTS.md    ◄──EDIT
@@ -35,7 +35,7 @@ docs/test-cases.md    ◄──READ
 **MANDATORY READS** (from docs/):
 
 1. `./docs/PRD.md` - Full requirements
-2. `./docs/phase-$ARGUMENTS-plan.md` - This phase's implementation plan
+2. `./docs/plans/plan-phase-$ARGUMENTS.md` - This phase's implementation plan
 3. `./docs/test-cases.md` - Tests to satisfy
 
 **VERIFY** (in workspace/):
@@ -466,7 +466,7 @@ Create JSON data files for persistence:
 
 ### Step 1: Understand the Phase
 - [ ] Read `docs/PRD.md` for overall requirements
-- [ ] Read `docs/phase-$ARGUMENTS-plan.md` for this phase's deliverables
+- [ ] Read `docs/plans/plan-phase-$ARGUMENTS.md` for this phase's deliverables
 - [ ] Identify what needs to be added to workspace/
 
 ### Step 2: Update workspace/SOUL.md
@@ -561,7 +561,7 @@ User: /clawd-execute-phase 1
 
 Claude:
 1. Reads docs/PRD.md - understands Phase 1 requirements
-2. Reads docs/phase-1-plan.md - understands deliverables
+2. Reads docs/plans/plan-phase-1.md - understands deliverables
 3. Edits workspace/SOUL.md - adds news curator persona & rules
 4. Edits workspace/TOOLS.md - adds skill tool definitions
 5. Creates workspace/skills/ai-news-scanner/SKILL.md - skill manifest

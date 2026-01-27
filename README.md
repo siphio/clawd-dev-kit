@@ -48,7 +48,9 @@ your-capability-project/
 │   ├── TOOLS-additions.md          # Tool definitions to add
 │   ├── memory-schema.md            # Memory file specifications
 │   ├── test-cases.md               # Validation test cases
-│   └── phase-X-plan.md             # Implementation plans per phase
+│   └── plans/                      # Implementation plans
+│       ├── plan-phase-1.md
+│       └── plan-phase-2.md
 │
 ├── 📂 workspace/                   ← LIVE AGENT (deployed to Clawdbot)
 │   ├── IDENTITY.md                 # Agent identity
@@ -191,8 +193,8 @@ clawd-dev-kit/
 │   ├── SOUL-additions.md        ├── SOUL.md ◄─── THE DEPLOYABLE UNIT    │
 │   ├── TOOLS-additions.md       ├── TOOLS.md                             │
 │   ├── test-cases.md            ├── AGENTS.md                            │
-│   └── phase-X-plan.md          ├── memory/                              │
-│                                └── skills/                               │
+│   └── plans/                   ├── memory/                              │
+│       └── plan-phase-X.md      └── skills/                               │
 │       PLANNING                      LIVE CONFIGURATION                   │
 │       (Reference only)              (Gets deployed)                      │
 │                                                                          │
@@ -312,7 +314,7 @@ ssh-copy-id -i ~/.ssh/id_ed25519_clawd_mini.pub user@macmini.local
 **`/clawd-plan-phase`** - Heavy research (Archon + sub-agents)
 - Spawns sub-agents for parallel research
 - Queries Archon RAG for API docs, MCP servers, patterns
-- Generates detailed implementation plan in docs/
+- Generates detailed implementation plan in docs/plans/
 
 ---
 

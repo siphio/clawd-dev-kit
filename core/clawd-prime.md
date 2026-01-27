@@ -40,6 +40,7 @@ Check what planning work has been done:
 
 ```bash
 ls -la ./docs/
+ls -la ./docs/plans/
 ```
 
 Look for:
@@ -47,7 +48,7 @@ Look for:
 - `TOOLS-additions.md` - Tool conventions planned?
 - `memory-schema.md` - Memory structure planned?
 - `test-cases.md` - Test cases defined?
-- `phase-X-plan.md` - Any phase plans exist?
+- `plans/plan-phase-X.md` - Any phase plans exist?
 
 ---
 
@@ -91,7 +92,7 @@ Based on what exists, determine current phase:
 | State | Current Phase | Next Step |
 |-------|---------------|-----------|
 | Only PRD exists | Phase 0 | Run `/clawd-plan-phase` to plan Phase 1 |
-| PRD + phase-1-plan.md | Phase 1 Planning Done | Run `/clawd-execute-phase 1` |
+| PRD + plans/plan-phase-1.md | Phase 1 Planning Done | Run `/clawd-execute-phase 1` |
 | workspace/ has SOUL.md started | Phase 1 In Progress | Continue execution or validate |
 | Phase 1 complete, no phase-2-plan | Between Phases | Run `/clawd-plan-phase` for Phase 2 |
 | All phases complete | Done | Run `/clawd-validate-phase` then `/clawd-deploy` |
@@ -125,7 +126,7 @@ Compile a brief context summary:
 - SOUL-additions.md: [✅/❌]
 - TOOLS-additions.md: [✅/❌]
 - test-cases.md: [✅/❌]
-- phase-X-plan.md: [list what exists]
+- plans/plan-phase-X.md: [list what exists]
 
 ### Implementation (workspace/)
 - SOUL.md: [Not started / In progress / Complete]

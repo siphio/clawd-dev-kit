@@ -17,7 +17,8 @@ You are creating a comprehensive Product Requirements Document and initializing 
 │   ├── TOOLS-additions.md
 │   ├── memory-schema.md
 │   ├── test-cases.md
-│   └── phase-1-plan.md
+│   └── plans/                  ← Phase implementation plans
+│       └── plan-phase-1.md
 │
 ├── workspace/                  ← LIVE AGENT (deployed to Clawdbot)
 │   ├── IDENTITY.md
@@ -52,8 +53,8 @@ You are creating a comprehensive Product Requirements Document and initializing 
 ## Step 1: Create Project Structure
 
 ```bash
-# Create documentation directory
-mkdir -p ./docs
+# Create documentation directory with plans subfolder
+mkdir -p ./docs/plans
 
 # Create workspace (deployable Clawdbot instance)
 mkdir -p ./workspace/memory
@@ -442,7 +443,7 @@ clawdbot agent --message "What do you know about [capability name]?" --thinking 
 [Continue for each test...]
 ```
 
-### docs/phase-1-plan.md
+### docs/plans/plan-phase-1.md
 
 ```markdown
 # Phase 1 Implementation Plan
@@ -501,8 +502,9 @@ cat docs/PRD.md
 .
 ├── docs/                    # Planning documentation (NOT deployed)
 │   ├── PRD.md
-│   ├── phase-1-plan.md
-│   └── test-cases.md
+│   ├── test-cases.md
+│   └── plans/
+│       └── plan-phase-1.md
 │
 ├── workspace/               # Live agent files (DEPLOYED to Clawdbot)
 │   ├── SOUL.md
@@ -542,7 +544,8 @@ Structure created:
 │   ├── TOOLS-additions.md       (XX KB) - Reference copy
 │   ├── memory-schema.md         (XX KB)
 │   ├── test-cases.md            (XX KB)
-│   └── phase-1-plan.md          (XX KB)
+│   └── plans/
+│       └── plan-phase-1.md      (XX KB)
 │
 ├── workspace/                   # Live agent (DEPLOYED)
 │   ├── IDENTITY.md              (XX KB)

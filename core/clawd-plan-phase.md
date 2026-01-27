@@ -835,10 +835,10 @@ echo "$result" | grep -q "[expected-content]" && echo "TC-001 PASS" || echo "TC-
 
 Save the complete plan to:
 ```
-./docs/phase-[X]-plan.md
+./docs/plans/plan-phase-[X].md
 ```
 
-Where [X] is the phase number (e.g., `phase-1-plan.md`, `phase-2-plan.md`).
+Where [X] is the phase number (e.g., `plan-phase-1.md`, `plan-phase-2.md`).
 
 ### 7.2 Plan Summary
 

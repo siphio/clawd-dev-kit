@@ -78,7 +78,8 @@ your-capability-project/
 │   ├── TOOLS-additions.md      # Reference copy of tool definitions
 │   ├── memory-schema.md        # Memory file specifications
 │   ├── test-cases.md           # Validation test cases
-│   └── phase-X-plan.md         # Implementation plans per phase
+│   └── plans/                  # Implementation plans
+│       └── plan-phase-X.md     # Per-phase implementation plan
 │
 ├── workspace/                  # LIVE AGENT (deployed to Clawdbot)
 │   ├── IDENTITY.md             # Agent identity

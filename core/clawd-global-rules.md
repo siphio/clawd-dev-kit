@@ -32,10 +32,11 @@ Can this be done with SOUL.md behavioral rules?
 
 **Enforcement:**
 - Validate with `wc -l` before finalizing any document
-- If PRD exceeds 1000 lines: scope is too large, split capability
-- If plan exceeds 700 lines: cut content, move detail to execute phase
+- If PRD exceeds 1000 lines: condense ruthlessly, then consider splitting capability
+- If plan exceeds 700 lines: keep condensing until it fits (don't split)
 - Use bullet points, tables, and concise language
 - Never duplicate content that can be referenced
+- Cut explanations first, keep actionable specifics
 
 **Why this matters:** Context bloat degrades AI performance. Dense, concise documents enable better execution.
 

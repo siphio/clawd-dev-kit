@@ -29,12 +29,31 @@ This is a HARD LIMIT. Exceeding this causes context bloat and degrades performan
 - Skip obvious details - focus on decisions and specifics
 - Reference PRD sections instead of repeating content
 
-### If Plan Exceeds 700 Lines:
-1. STOP and review for bloat
-2. Cut redundant explanations
-3. Consolidate similar sections
-4. Move detailed code to execute phase (plans describe WHAT, execute does HOW)
-5. If still over: split the phase into smaller phases
+### If Plan Exceeds 700 Lines - CONDENSE, DON'T SPLIT:
+
+Keep condensing until it fits. Remove least valuable content first:
+
+**Condensing Priority (cut in this order):**
+1. **Explanatory prose** - Cut "why" explanations, keep "what" and "how"
+2. **Redundant examples** - One example per pattern is enough
+3. **Obvious details** - If a competent dev would know it, cut it
+4. **Verbose formatting** - Convert paragraphs to single-line bullets
+5. **Context that's in PRD** - Reference it, don't repeat it
+6. **Edge case handling** - Keep happy path, trim edge cases
+7. **Alternative approaches** - Keep the chosen approach only
+
+**Condensing Techniques:**
+```markdown
+# BEFORE (verbose):
+The authentication system will use JWT tokens. When a user logs in,
+the server will generate a token containing the user ID and expiration.
+This token should be stored securely and sent with each request.
+
+# AFTER (condensed):
+- Auth: JWT tokens, store user ID + expiry, send with all requests
+```
+
+**Keep iterating until under 700 lines. The core value should fit.**
 
 **A bloated plan is worse than a concise one. Density > Length.**
 
@@ -890,7 +909,11 @@ else
 fi
 ```
 
-**If over 700 lines**: DO NOT PROCEED. Go back and cut content until under 700.
+**If over 700 lines**: DO NOT PROCEED. Go back and condense:
+1. Review the condensing priority list above
+2. Cut least valuable content first
+3. Keep condensing until under 700
+4. The essential value WILL fit - keep iterating
 
 ### 7.3 Update STATE.md
 

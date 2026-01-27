@@ -1,419 +1,269 @@
 ---
-description: Deploy validated Clawdbot capability to production Mac Mini
+description: Deploy workspace/ folder to production Mac Mini
 argument-hint: [capability-name]
 ---
 
-# Deploy Clawdbot Capability to Production (macOS)
+# Deploy Clawdbot Capability (macOS)
 
-You are deploying a validated Clawdbot capability from your development machine to your production Mac Mini via Git and SSH.
+You are deploying the **`workspace/` folder** from your project to production on the Mac Mini.
 
-## Critical Context
+## The Flow: workspace/ → Production
 
-**MANDATORY READS**:
-1. `~/clawd-dev-kit/capabilities/$ARGUMENTS/validation-report.md` - Must show ALL PASS
+```
+YOUR PROJECT                         MAC MINI (Production)
+─────────────────────────           ─────────────────────────
+./workspace/                   ──►  ~/clawd/
+├── IDENTITY.md               SSH   ├── IDENTITY.md
+├── SOUL.md                    +    ├── SOUL.md
+├── TOOLS.md                  SCP   ├── TOOLS.md
+├── AGENTS.md                       ├── AGENTS.md
+├── MEMORY.md                       ├── MEMORY.md
+├── USER.md                         ├── USER.md
+├── memory/                         ├── memory/
+├── skills/                         └── skills/
+└── media/
 
-**Requirements**:
-- Validation report shows all levels passed
-- SSH keys configured to Mac Mini
-- Git repository set up for capabilities
-- `.env` file configured with deployment settings
-
-**Platform**: Deploying FROM macOS development machine TO macOS Mac Mini
+     SOURCE                              PRODUCTION
+     (your project)                      (live Clawdbot)
+```
 
 ---
 
 ## Pre-Deployment Checklist
 
-### Step 1: Load Configuration
+### 1. Verify Validation Passed
 
 ```bash
-echo "📋 Loading deployment configuration..."
+echo "⚠️  IMPORTANT: Have you run /clawd-validate-phase and passed all tests?"
+echo ""
+echo "Only deploy after successful validation!"
+echo ""
+read -p "Validation passed? (yes/no): " CONFIRMED
 
-# Load environment variables
-if [ -f ~/clawd-dev-kit/.env ]; then
-    source ~/clawd-dev-kit/.env
-    echo "✅ Configuration loaded"
-else
-    echo "❌ ERROR: .env file not found"
-    echo "   Copy .env.example to .env and configure your settings"
+if [ "$CONFIRMED" != "yes" ]; then
+    echo "❌ Deployment cancelled. Run /clawd-validate-phase first."
     exit 1
 fi
-
-# Validate required variables
-missing_vars=""
-
-if [ -z "$CLAWD_MINI_HOST" ]; then
-    missing_vars="$missing_vars CLAWD_MINI_HOST"
-fi
-
-if [ -z "$CLAWD_MINI_USER" ]; then
-    missing_vars="$missing_vars CLAWD_MINI_USER"
-fi
-
-if [ -z "$CLAWD_MINI_SSH_KEY" ]; then
-    missing_vars="$missing_vars CLAWD_MINI_SSH_KEY"
-fi
-
-if [ -z "$CLAWD_MINI_WORKSPACE" ]; then
-    missing_vars="$missing_vars CLAWD_MINI_WORKSPACE"
-fi
-
-if [ -n "$missing_vars" ]; then
-    echo "❌ ERROR: Missing required configuration:"
-    echo "   $missing_vars"
-    echo "   Please update ~/clawd-dev-kit/.env"
-    exit 1
-fi
-
-echo "   Host: $CLAWD_MINI_HOST"
-echo "   User: $CLAWD_MINI_USER"
-echo "   SSH Key: $CLAWD_MINI_SSH_KEY"
-echo "   Workspace: $CLAWD_MINI_WORKSPACE"
 ```
 
-### Step 2: Verify Validation Passed
+### 2. Load Environment Variables
 
 ```bash
-echo "📋 Verifying validation status..."
-
-validation_report=~/clawd-dev-kit/capabilities/$ARGUMENTS/validation-report.md
-
-if [ ! -f "$validation_report" ]; then
-    echo "❌ ERROR: Validation report not found"
-    echo "   Run /clawd-validate-phase $ARGUMENTS first"
-    exit 1
-fi
-
-# Check for FAIL in validation report
-if grep -q "❌ FAIL" "$validation_report" || grep -q "NEEDS FIXES" "$validation_report"; then
-    echo "❌ ERROR: Validation has failures"
-    echo "   Fix issues and re-run /clawd-validate-phase before deploying"
-    cat "$validation_report" | grep -A1 "FAIL\|NEEDS FIXES"
-    exit 1
-fi
-
-echo "✅ Validation passed - ready for deployment"
-```
-
-### Step 3: Test SSH Connection
-
-```bash
-echo "📋 Testing SSH connection to Mac Mini..."
-
-# Expand SSH key path
-ssh_key="${CLAWD_MINI_SSH_KEY/#\~/$HOME}"
-
-# Test connection
-if ssh -i "$ssh_key" -o ConnectTimeout=10 -o BatchMode=yes \
-    "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" "echo 'SSH connection OK'" 2>/dev/null; then
-    echo "✅ SSH connection successful"
+# Load deployment config from .env
+if [ -f ./.env ]; then
+    source ./.env
+    echo "✅ Loaded .env configuration"
 else
-    echo "❌ ERROR: Cannot connect to Mac Mini"
-    echo "   Host: $CLAWD_MINI_HOST"
-    echo "   User: $CLAWD_MINI_USER"
-    echo "   Key: $ssh_key"
+    echo "❌ Missing .env file."
     echo ""
-    echo "   Troubleshooting:"
-    echo "   1. Is the Mac Mini powered on and on the network?"
-    echo "   2. Is SSH enabled? (System Preferences > Sharing > Remote Login)"
-    echo "   3. Is the SSH key correct? Test: ssh -i $ssh_key ${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}"
-    echo "   4. Is the key added to Mini's authorized_keys?"
+    echo "Create from .env.example:"
+    echo "  cp .env.example .env"
+    echo ""
+    echo "Then edit with your Mac Mini details:"
+    echo "  CLAWD_MINI_HOST=your-macmini.local"
+    echo "  CLAWD_MINI_USER=your-username"
+    echo "  CLAWD_MINI_SSH_KEY=~/.ssh/id_ed25519"
     exit 1
 fi
+
+# Required variables
+: "${CLAWD_MINI_HOST:?Missing CLAWD_MINI_HOST in .env}"
+: "${CLAWD_MINI_USER:?Missing CLAWD_MINI_USER in .env}"
+: "${CLAWD_MINI_SSH_KEY:?Missing CLAWD_MINI_SSH_KEY in .env}"
+CLAWD_MINI_WORKSPACE="${CLAWD_MINI_WORKSPACE:-~/clawd}"
+
+echo "📍 Target: $CLAWD_MINI_USER@$CLAWD_MINI_HOST:$CLAWD_MINI_WORKSPACE"
+```
+
+### 3. Verify workspace/ exists
+
+```bash
+if [ ! -d ./workspace ]; then
+    echo "❌ No workspace/ folder found."
+    echo "   Run /clawd-execute-phase first."
+    exit 1
+fi
+
+if [ ! -f ./workspace/SOUL.md ]; then
+    echo "❌ workspace/SOUL.md not found."
+    echo "   Run /clawd-execute-phase first."
+    exit 1
+fi
+
+echo "✅ workspace/ folder verified"
+```
+
+### 4. Test SSH Connection
+
+```bash
+echo "🔌 Testing SSH connection to Mac Mini..."
+
+ssh -i "$CLAWD_MINI_SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes \
+    "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" "echo 'Connection successful'" || {
+    echo "❌ Cannot connect to Mac Mini."
+    echo ""
+    echo "Check:"
+    echo "  - Host: $CLAWD_MINI_HOST"
+    echo "  - User: $CLAWD_MINI_USER"
+    echo "  - SSH Key: $CLAWD_MINI_SSH_KEY"
+    echo ""
+    echo "Try manually: ssh -i $CLAWD_MINI_SSH_KEY $CLAWD_MINI_USER@$CLAWD_MINI_HOST"
+    exit 1
+}
+
+echo "✅ SSH connection verified"
 ```
 
 ---
 
-## Deployment Process
-
-### Step 4: Create Backup on Mac Mini
+## Step 1: Create Safety Backup on Mini
 
 ```bash
-echo "📋 Creating backup on Mac Mini..."
+echo "📦 Creating safety backup on Mac Mini..."
 
-backup_name="clawd-backup-$(date +%Y%m%d-%H%M%S)"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_TAG="pre-deploy-$TIMESTAMP"
 
-ssh -i "$ssh_key" "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" << EOF
-    echo "Creating backup: $backup_name"
+ssh -i "$CLAWD_MINI_SSH_KEY" "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" << ENDSSH
+    cd $CLAWD_MINI_WORKSPACE
 
-    if [ -d "$CLAWD_MINI_WORKSPACE" ]; then
-        cp -r "$CLAWD_MINI_WORKSPACE" "${CLAWD_MINI_WORKSPACE}-${backup_name}"
-        echo "✅ Backup created: ${CLAWD_MINI_WORKSPACE}-${backup_name}"
-    else
-        echo "⚠️  Production workspace doesn't exist yet - no backup needed"
+    # Create backup directory
+    mkdir -p .backups/$BACKUP_TAG
+
+    # Backup current state
+    cp SOUL.md .backups/$BACKUP_TAG/ 2>/dev/null || true
+    cp TOOLS.md .backups/$BACKUP_TAG/ 2>/dev/null || true
+    cp IDENTITY.md .backups/$BACKUP_TAG/ 2>/dev/null || true
+    cp AGENTS.md .backups/$BACKUP_TAG/ 2>/dev/null || true
+
+    if [ -d skills ]; then
+        cp -r skills .backups/$BACKUP_TAG/
     fi
-EOF
 
-echo "✅ Backup step complete"
+    echo "Backup tag: $BACKUP_TAG"
+ENDSSH
+
+echo "✅ Safety backup created: $BACKUP_TAG"
+echo "   Use /clawd-rollback $BACKUP_TAG to restore if needed"
 ```
 
-### Step 5: Prepare Capability Files for Git
+---
+
+## Step 2: Stop Production Daemon
 
 ```bash
-echo "📋 Preparing capability files..."
+echo "⏸️  Stopping production daemon..."
 
-# Navigate to dev workspace
-cd ~/clawd-dev
+ssh -i "$CLAWD_MINI_SSH_KEY" "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" << 'ENDSSH'
+    launchctl unload ~/Library/LaunchAgents/com.clawdbot.gateway.plist 2>/dev/null || true
+    echo "Daemon stopped"
+ENDSSH
 
-# Check git status
-echo "Current git status:"
-git status
-
-# Stage capability-related changes
-echo "Staging changes..."
-
-# Stage SOUL.md, TOOLS.md, MEMORY.md changes
-git add SOUL.md TOOLS.md MEMORY.md AGENTS.md 2>/dev/null
-
-# Stage any skill directories
-if [ -d "skills" ]; then
-    git add skills/
-fi
-
-# Stage memory schema (but not daily logs with test data)
-# Don't stage memory/*.md as those contain test data
-
-echo "✅ Files staged for commit"
+echo "✅ Production daemon stopped"
 ```
 
-### Step 6: Commit Changes
+---
+
+## Step 3: Deploy workspace/ to Production
 
 ```bash
-echo "📋 Committing changes..."
+echo "🚀 Deploying workspace/ to production..."
 
-capability_name="$ARGUMENTS"
-commit_message="feat(capability): $capability_name - validated and ready for production
+# Copy entire workspace folder contents
+scp -i "$CLAWD_MINI_SSH_KEY" -r ./workspace/* \
+    "$CLAWD_MINI_USER@$CLAWD_MINI_HOST:$CLAWD_MINI_WORKSPACE/"
 
-- Added SOUL.md orchestration rules
-- Added TOOLS.md conventions
-- Configured memory schema
-- All validation levels passed
-
-Validated: $(date +%Y-%m-%d)
-Validation Report: capabilities/$capability_name/validation-report.md"
-
-git commit -m "$commit_message"
-
-if [ $? -eq 0 ]; then
-    echo "✅ Changes committed"
-else
-    echo "⚠️  No changes to commit or commit failed"
-fi
+echo "✅ workspace/ deployed to $CLAWD_MINI_HOST:$CLAWD_MINI_WORKSPACE/"
 ```
 
-### Step 7: Push to Remote Repository
+---
+
+## Step 4: Start Production Daemon
 
 ```bash
-echo "📋 Pushing to remote repository..."
+echo "▶️  Starting production daemon..."
 
-git push origin main
+ssh -i "$CLAWD_MINI_SSH_KEY" "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" << 'ENDSSH'
+    # Start the daemon
+    launchctl load ~/Library/LaunchAgents/com.clawdbot.gateway.plist
+    sleep 3
 
-if [ $? -eq 0 ]; then
-    echo "✅ Pushed to remote repository"
-else
-    echo "❌ ERROR: Git push failed"
-    echo "   Check your Git configuration and remote access"
-    exit 1
-fi
-```
-
-### Step 8: Pull on Mac Mini
-
-```bash
-echo "📋 Pulling changes on Mac Mini..."
-
-ssh -i "$ssh_key" "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" << EOF
-    echo "Navigating to workspace..."
-    cd "$CLAWD_MINI_WORKSPACE"
-
-    echo "Current commit:"
-    git log --oneline -1
-
-    echo "Pulling latest changes..."
-    git pull origin main
-
-    if [ \$? -eq 0 ]; then
-        echo "✅ Changes pulled successfully"
-        echo "New commit:"
-        git log --oneline -1
+    # Verify it's running
+    if launchctl list | grep -q "com.clawdbot.gateway"; then
+        echo "✅ Daemon started successfully"
     else
-        echo "❌ Git pull failed"
+        echo "❌ Daemon failed to start"
         exit 1
     fi
-EOF
+ENDSSH
 
-if [ $? -eq 0 ]; then
-    echo "✅ Mac Mini updated"
-else
-    echo "❌ ERROR: Failed to update Mac Mini"
-    exit 1
-fi
+echo "✅ Production daemon started"
 ```
 
-### Step 9: Restart Clawdbot Daemon on Mac Mini
+---
+
+## Step 5: Verify Deployment
 
 ```bash
-echo "📋 Restarting Clawdbot daemon on Mac Mini..."
+echo "🏥 Verifying deployment..."
 
-ssh -i "$ssh_key" "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" << EOF
-    echo "Stopping Clawdbot daemon..."
-    launchctl unload ~/Library/LaunchAgents/com.clawdbot.gateway.plist 2>/dev/null
-    sleep 2
+ssh -i "$CLAWD_MINI_SSH_KEY" "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" << 'ENDSSH'
+    echo "--- Health Check ---"
+    clawdbot health
 
-    echo "Starting Clawdbot daemon..."
-    launchctl load ~/Library/LaunchAgents/com.clawdbot.gateway.plist
-    sleep 5
-
-    echo "Checking daemon status..."
-    if launchctl list 2>/dev/null | grep -q "clawdbot"; then
-        echo "✅ Clawdbot daemon is running"
-    else
-        echo "❌ Daemon may not have started - check logs"
-    fi
-EOF
-
-echo "✅ Daemon restart complete"
+    echo ""
+    echo "--- Quick Capability Test ---"
+    clawdbot agent --message "What capabilities do you have?" --thinking low
+ENDSSH
 ```
 
-### Step 10: Verify Deployment
+---
+
+## Step 6: Deployment Complete
 
 ```bash
-echo "📋 Verifying deployment..."
-
-ssh -i "$ssh_key" "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" << EOF
-    echo "=== Clawdbot Health Check ==="
-    clawdbot health --verbose
-
-    echo ""
-    echo "=== Current SOUL.md capabilities ==="
-    grep -A2 "^## " "$CLAWD_MINI_WORKSPACE/SOUL.md" | head -30
-
-    echo ""
-    echo "=== Recent logs ==="
-    clawdbot logs --limit 10
-EOF
-
 echo ""
-echo "✅ Deployment verification complete"
+echo "═══════════════════════════════════════════════════════════════"
+echo "🚀 DEPLOYMENT COMPLETE"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+echo "Deployed: ./workspace/"
+echo "Target:   $CLAWD_MINI_USER@$CLAWD_MINI_HOST:$CLAWD_MINI_WORKSPACE/"
+echo "Backup:   $BACKUP_TAG"
+echo ""
+echo "The capability is now LIVE on your Mac Mini!"
+echo ""
+echo "To rollback if needed:"
+echo "  /clawd-rollback $BACKUP_TAG"
+echo ""
+echo "To check status:"
+echo "  ssh -i $CLAWD_MINI_SSH_KEY $CLAWD_MINI_USER@$CLAWD_MINI_HOST 'clawdbot health'"
+echo ""
 ```
 
-### Step 11: Tag Release
+---
+
+## Quick Reference
 
 ```bash
-echo "📋 Tagging release..."
+# Deploy to production
+/clawd-deploy
 
-cd ~/clawd-dev
+# What it does:
+# 1. Loads .env config (SSH details)
+# 2. Creates safety backup on Mac Mini
+# 3. Stops production daemon
+# 4. Copies entire workspace/ folder to ~/clawd/ on Mini
+# 5. Starts production daemon
+# 6. Verifies deployment
 
-# Create release tag
-tag_name="capability-$ARGUMENTS-v1.0-$(date +%Y%m%d)"
-git tag -a "$tag_name" -m "Deployed capability: $ARGUMENTS to production"
-git push origin "$tag_name"
+# The key insight:
+# workspace/ IS your Clawdbot
+# Just copy it to production and restart the daemon
 
-echo "✅ Tagged release: $tag_name"
+# Required .env:
+# CLAWD_MINI_HOST=your-macmini.local
+# CLAWD_MINI_USER=your-username
+# CLAWD_MINI_SSH_KEY=~/.ssh/id_ed25519
+# CLAWD_MINI_WORKSPACE=~/clawd  (optional, defaults to ~/clawd)
 ```
-
----
-
-## Deployment Report
-
-Generate deployment summary:
-
-```markdown
-# DEPLOYMENT REPORT
-# Capability: [Capability Name]
-# Date: [date]
-
-═══════════════════════════════════════════════════════════════
-                     DEPLOYMENT SUMMARY
-═══════════════════════════════════════════════════════════════
-
-✅ Configuration loaded
-✅ Validation verified (all passed)
-✅ SSH connection successful
-✅ Backup created on Mac Mini
-✅ Changes committed to Git
-✅ Pushed to remote repository
-✅ Pulled on Mac Mini
-✅ Daemon restarted
-✅ Deployment verified
-✅ Release tagged
-
-═══════════════════════════════════════════════════════════════
-
-## Deployment Details
-
-- **Source**: ~/clawd-dev (development machine)
-- **Target**: [CLAWD_MINI_HOST]:$CLAWD_MINI_WORKSPACE
-- **Git Commit**: [commit hash]
-- **Release Tag**: [tag name]
-- **Backup**: ${CLAWD_MINI_WORKSPACE}-[backup-name]
-
-## Rollback Command
-
-If issues occur, run:
-```
-/clawd-rollback last
-```
-
-Or to rollback to specific backup:
-```
-/clawd-rollback [backup-name or commit-hash]
-```
-
-═══════════════════════════════════════════════════════════════
-```
-
----
-
-## Human Checkpoint
-
-Present deployment report to user:
-
-1. **Confirm deployment successful** - All steps completed?
-2. **Test in production** - Send a test message to production Clawdbot?
-3. **Monitor logs** - Watch for any issues?
-
----
-
-## Post-Deployment Monitoring
-
-Recommend monitoring for the next 24 hours:
-
-```bash
-# Check logs remotely
-ssh -i "$ssh_key" "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" "clawdbot logs --limit 50"
-
-# Check for errors
-ssh -i "$ssh_key" "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" "clawdbot logs --limit 100 | grep -i error"
-
-# Check health
-ssh -i "$ssh_key" "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" "clawdbot health"
-```
-
----
-
-## Troubleshooting
-
-### If Deployment Fails
-
-1. **Check SSH connection**: `ssh -i $CLAWD_MINI_SSH_KEY ${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}`
-2. **Check Git status on Mini**: SSH in and run `git status`
-3. **Check daemon logs**: `clawdbot logs --limit 100`
-4. **Rollback if needed**: `/clawd-rollback last`
-
-### If Capability Doesn't Work in Production
-
-1. **Check SOUL.md loaded**: Ask Clawdbot about its capabilities
-2. **Check logs for errors**: `clawdbot logs --limit 100 | grep error`
-3. **Compare with dev**: Diff SOUL.md between dev and production
-4. **Rollback and investigate**: `/clawd-rollback last`
-
----
-
-## Next Steps
-
-After successful deployment:
-- Monitor production for 24 hours
-- Check cron jobs fire correctly
-- Verify proactive behaviors work
-- Document any production-specific observations

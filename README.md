@@ -35,6 +35,57 @@ Perfect for building "AI employees" that run 24/7 on your Mac Mini.
 
 ---
 
+## 📁 Project Structure
+
+When you create a new capability project, ClawdDev Kit generates this structure:
+
+```
+your-capability-project/
+│
+├── 📂 docs/                        ← PLANNING (human reference, NOT deployed)
+│   ├── PRD.md                      # Product Requirements Document
+│   ├── SOUL-additions.md           # Behavioral rules to add
+│   ├── TOOLS-additions.md          # Tool definitions to add
+│   ├── memory-schema.md            # Memory file specifications
+│   ├── test-cases.md               # Validation test cases
+│   └── phase-X-plan.md             # Implementation plans per phase
+│
+├── 📂 workspace/                   ← LIVE AGENT (deployed to Clawdbot)
+│   ├── IDENTITY.md                 # Agent identity
+│   ├── SOUL.md                     # Complete behavioral rules
+│   ├── TOOLS.md                    # Complete tool definitions
+│   ├── AGENTS.md                   # Operating instructions
+│   ├── MEMORY.md                   # Long-term memory
+│   ├── USER.md                     # User preferences
+│   ├── memory/                     # Daily memory files
+│   ├── skills/                     # Executable skill scripts
+│   └── media/                      # Media assets
+│
+└── .env                            # SSH config for deployment
+```
+
+### The Key Distinction: docs/ vs workspace/
+
+```
+┌───────────┬────────────────────────┬─────────────────────────────┐
+│           │       docs/            │       workspace/            │
+├───────────┼────────────────────────┼─────────────────────────────┤
+│ What      │ Planning documentation │ Live agent configuration    │
+│ Who reads │ You + Claude           │ Clawdbot agent at runtime   │
+│ When      │ During development     │ At runtime                  │
+│ Deploy?   │ ❌ No                  │ ✅ Yes                      │
+│ Changes   │ By you manually        │ By agent (memory) + you     │
+└───────────┴────────────────────────┴─────────────────────────────┘
+```
+
+**Why this separation?**
+- Keep all development within your project folder
+- Continue developing capabilities later without confusion
+- Deploy by simply copying the `workspace/` folder
+- Clear separation between "what we planned" and "what runs"
+
+---
+
 ## 📁 Framework Structure
 
 ```
@@ -46,18 +97,18 @@ clawd-dev-kit/
 ├── 📂 core/                           # Platform-agnostic commands
 │   ├── 📋 clawd-global-rules.md       # Foundation conventions & patterns
 │   ├── 📝 clawd-create-prd.md         # PRD with Proactivity Map
-│   ├── 🔍 clawd-prime.md              # Context loading + Archon research
-│   ├── 🧠 clawd-plan-phase.md         # Deep planning with sub-agents
+│   ├── 🔍 clawd-prime.md              # Load context, determine next step
+│   ├── 🧠 clawd-plan-phase.md         # Deep planning with Archon + sub-agents
 │   └── ⚡ clawd-execute-phase.md      # Orchestration-first implementation
 │
 ├── 🍎 macos/                          # macOS-specific (launchctl)
-│   ├── ✅ clawd-validate-phase.md     # Auto-setup + 7-level testing
-│   ├── 🚀 clawd-deploy.md             # Git + SSH deployment
+│   ├── ✅ clawd-validate-phase.md     # Copy to test instance + testing
+│   ├── 🚀 clawd-deploy.md             # SSH + SCP deployment
 │   └── ⏪ clawd-rollback.md           # Emergency rollback
 │
 └── 🐧 wsl2/                           # WSL2/Linux-specific (systemctl)
-    ├── ✅ clawd-validate-phase.md     # Auto-setup + 7-level testing
-    ├── 🚀 clawd-deploy.md             # Git + SSH deployment
+    ├── ✅ clawd-validate-phase.md     # Copy to test instance + testing
+    ├── 🚀 clawd-deploy.md             # SSH + SCP deployment
     └── ⏪ clawd-rollback.md           # Emergency rollback
 ```
 
@@ -70,8 +121,9 @@ clawd-dev-kit/
 │                        CLAWDDEV KIT WORKFLOW                            │
 └─────────────────────────────────────────────────────────────────────────┘
 
-  📝 /clawd-create-prd                    Create PRD with Proactivity Map
-         │
+  📝 /clawd-create-prd                    Create PRD + project structure
+         │                                ├── Creates docs/ folder
+         │                                └── Creates workspace/ folder
          ▼
   ┌──────────────┐
   │   👤 Human   │◄─────────────────── Validate requirements
@@ -79,14 +131,16 @@ clawd-dev-kit/
   └──────┬───────┘
          │
          ▼
-  🔍 /clawd-prime                         Load context + Archon research
-         │
+  🔍 /clawd-prime                         Familiarize with project
+         │                                ├── Read PRD and docs/
+         │                                ├── Check workspace/ state
+         │                                └── Determine next step
          ▼
-  🧠 /clawd-plan-phase                    Sub-agents research in parallel
-         │                                ├── 🔎 Clawdbot docs research
-         │                                ├── 🔎 Technology API research
+  🧠 /clawd-plan-phase                    Deep research + planning
+         │                                ├── 🔎 Archon RAG queries
+         │                                ├── 🔎 Sub-agents for APIs
          │                                ├── 🔎 MCP server research
-         │                                └── 🔎 Similar capabilities
+         │                                └── 📄 Generate phase plan
          ▼
   ┌──────────────┐
   │   👤 Human   │◄─────────────────── Validate plan
@@ -94,17 +148,13 @@ clawd-dev-kit/
   └──────┬───────┘
          │
          ▼
-  ⚡ /clawd-execute-phase                 Implement with Archon tracking
-         │
+  ⚡ /clawd-execute-phase                 Implement capability
+         │                                ├── Reads from docs/
+         │                                └── Writes to workspace/
          ▼
-  ✅ /clawd-validate-phase                7-Level automated testing
-         │                                ├── Level 1: Static validation
-         │                                ├── Level 2: Injection test
-         │                                ├── Level 3: Logic validation
-         │                                ├── Level 4: Proactivity test
-         │                                ├── Level 5: Persistence test
-         │                                ├── Level 6: Error handling
-         │                                └── Level 7: Integration test
+  ✅ /clawd-validate-phase                Copy workspace/ → ~/clawd-dev/
+         │                                ├── Restart local daemon
+         │                                └── Run tests from docs/test-cases.md
          ▼
   ┌──────────────┐
   │  All Pass?   │
@@ -113,8 +163,9 @@ clawd-dev-kit/
     YES  │   NO
     ┌────┴────┐
     ▼         ▼
-  🚀 /clawd-deploy    🔧 Fix & re-validate
+  🚀 /clawd-deploy    🔧 Fix workspace/ & re-validate
     │
+    │  Copy workspace/ → Mac Mini via SSH
     ▼
   ┌──────────────┐
   │  Issues?     │───YES───▶ ⏪ /clawd-rollback
@@ -122,6 +173,53 @@ clawd-dev-kit/
          │ NO
          ▼
     ✨ Done!
+```
+
+---
+
+## 🏗️ Architecture
+
+### Three Environments
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     YOUR PROJECT FOLDER (Source of Truth)               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   ./docs/                      ./workspace/                              │
+│   ├── PRD.md                   ├── IDENTITY.md                          │
+│   ├── SOUL-additions.md        ├── SOUL.md ◄─── THE DEPLOYABLE UNIT    │
+│   ├── TOOLS-additions.md       ├── TOOLS.md                             │
+│   ├── test-cases.md            ├── AGENTS.md                            │
+│   └── phase-X-plan.md          ├── memory/                              │
+│                                └── skills/                               │
+│       PLANNING                      LIVE CONFIGURATION                   │
+│       (Reference only)              (Gets deployed)                      │
+│                                                                          │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │
+              ┌──────────────────┼──────────────────┐
+              │                  │                  │
+              ▼                  │                  ▼
+┌─────────────────────────┐      │      ┌─────────────────────────┐
+│    ~/clawd-dev/         │      │      │    ~/clawd/             │
+│    (Local Test)         │      │      │    (Production)         │
+├─────────────────────────┤      │      ├─────────────────────────┤
+│  Copy workspace/ here   │◄─────┘      │  Copy workspace/ here   │
+│  for validation         │  Validate   │  via SSH + SCP          │
+│                         │             │                          │
+│  launchctl daemon       │             │  24/7 operation          │
+│  (your dev machine)     │             │  (Mac Mini)              │
+└─────────────────────────┘             └─────────────────────────┘
+```
+
+### Deployment Flow
+
+```
+workspace/ ──► Validate ──► ~/clawd-dev/ ──► Tests Pass? ──► Deploy ──► ~/clawd/
+                                                 │                    (Mac Mini)
+                                                 │
+                                                 └── No ──► Fix workspace/ ──► Re-validate
 ```
 
 ---
@@ -149,11 +247,25 @@ cp ~/clawd-dev-kit/.env.example ~/clawd-dev-kit/.env
 nano ~/clawd-dev-kit/.env
 ```
 
+### Create Your First Capability
+
+```bash
+# Create a new project folder
+mkdir ~/projects/my-capability && cd ~/projects/my-capability
+
+# Initialize with ClawdDev Kit
+/clawd-create-prd my-capability
+
+# This creates:
+# ./docs/PRD.md, test-cases.md, etc.
+# ./workspace/SOUL.md, TOOLS.md, etc.
+```
+
 ---
 
 ## ⚙️ Configuration
 
-Edit `~/clawd-dev-kit/.env` with your settings:
+Edit your project's `.env` with your settings:
 
 ```bash
 # Mac Mini SSH Connection
@@ -164,9 +276,6 @@ CLAWD_MINI_SSH_KEY=~/.ssh/id_ed25519_clawd_mini
 # Workspace Paths
 CLAWD_MINI_WORKSPACE=~/clawd
 CLAWD_DEV_WORKSPACE=~/clawd-dev
-
-# Git Repository
-CLAWD_CAPABILITIES_REPO=git@github.com:you/clawd-capabilities.git
 ```
 
 ### SSH Key Setup
@@ -183,67 +292,27 @@ ssh-copy-id -i ~/.ssh/id_ed25519_clawd_mini.pub user@macmini.local
 
 ## 📖 Command Reference
 
-| Command | Purpose | Phase |
-|---------|---------|-------|
-| `/clawd-create-prd <name>` | Create Product Requirements Document | 📝 Requirements |
-| `/clawd-prime <name>` | Load context and research technologies | 🔍 Research |
-| `/clawd-plan-phase <name>` | Generate detailed implementation plan | 🧠 Planning |
-| `/clawd-execute-phase <name>` | Implement the capability | ⚡ Implementation |
-| `/clawd-validate-phase <name>` | Run comprehensive tests | ✅ Validation |
-| `/clawd-deploy <name>` | Deploy to Mac Mini | 🚀 Deployment |
-| `/clawd-rollback [target]` | Rollback to previous state | ⏪ Recovery |
+| Command | Purpose | What It Does |
+|---------|---------|--------------|
+| `/clawd-create-prd <name>` | Initialize project | Creates docs/ + workspace/ structure |
+| `/clawd-prime` | Familiarize | Reads project files, determines current state and next step |
+| `/clawd-plan-phase <phase>` | Plan + Research | Uses Archon + sub-agents for deep research, generates phase plan |
+| `/clawd-execute-phase <phase>` | Implement | Edits workspace/ files based on plan |
+| `/clawd-validate-phase` | Test | Copies workspace/ → ~/clawd-dev/, runs tests |
+| `/clawd-deploy` | Deploy | Copies workspace/ → Mac Mini via SSH |
+| `/clawd-rollback [tag]` | Rollback | Restores from backup on Mac Mini |
 
----
+### Command Responsibilities
 
-## 🏗️ Architecture
+**`/clawd-prime`** - Lightweight context loading (NO Archon)
+- Reads PRD and existing docs/
+- Checks workspace/ implementation state
+- Tells you what phase you're in and what to do next
 
-### Development Flow
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                     YOUR DEV MACHINE (Mac/Windows)                       │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│   ~/clawd-dev-kit/          ~/clawd-dev/                                │
-│   ├── Commands              ├── SOUL.md (test)                          │
-│   ├── .env                  ├── TOOLS.md (test)                         │
-│   └── capabilities/         ├── MEMORY.md (test)                        │
-│       └── <name>/           └── skills/ (test)                          │
-│           ├── PRD.md                                                     │
-│           ├── plan.md       Local Clawdbot Instance                     │
-│           └── ...           (for testing only)                          │
-│                                                                          │
-└────────────────────────────────┬────────────────────────────────────────┘
-                                 │
-                                 │ Git Push + SSH
-                                 ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         MAC MINI (Production)                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│   ~/clawd/                                                               │
-│   ├── SOUL.md (production)                                              │
-│   ├── TOOLS.md (production)                                             │
-│   ├── MEMORY.md (live data)                                             │
-│   └── skills/ (production)                                              │
-│                                                                          │
-│   Production Clawdbot Instance                                          │
-│   └── 24/7 autonomous operation                                         │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### Validation Levels
-
-| Level | Name | What It Tests |
-|-------|------|---------------|
-| 1 | Static | YAML syntax, TypeScript compilation |
-| 2 | Injection | SOUL.md loads into agent context |
-| 3 | Logic | Test cases from PRD pass |
-| 4 | Proactivity | Cron/heartbeat triggers work |
-| 5 | Persistence | State survives daemon restart |
-| 6 | Error Handling | Graceful failures, proper escalation |
-| 7 | Integration | Full end-to-end workflow |
+**`/clawd-plan-phase`** - Heavy research (Archon + sub-agents)
+- Spawns sub-agents for parallel research
+- Queries Archon RAG for API docs, MCP servers, patterns
+- Generates detailed implementation plan in docs/
 
 ---
 

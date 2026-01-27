@@ -1,432 +1,564 @@
 ---
-description: Create a Product Requirements Document for a new Clawdbot capability
-argument-hint: [capability-name or description]
+description: Generate comprehensive PRD, design docs, and workspace structure for a Clawdbot capability
+argument-hint: [capability-description]
 ---
 
 # Create Clawdbot Capability PRD
 
-You are creating a comprehensive Product Requirements Document (PRD) for a new Clawdbot capability. This PRD will guide all subsequent phases of development.
+You are creating a comprehensive Product Requirements Document and initializing the full project structure including the deployable `workspace/` folder.
 
-## Critical Context
-
-**Read First**: Before proceeding, ensure you understand Clawdbot's unique paradigm by reviewing:
-- `clawd-global-rules.md` - Development conventions and patterns
-
-**Key Paradigm Shifts** (Clawdbot vs. Traditional Development):
-- **Prompt-orchestration first**: Capabilities are primarily SOUL.md rules, not code
-- **Proactivity is mandatory**: Define when the capability runs autonomously
-- **Persistence required**: All state must survive daemon restarts
-- **Human-in-the-loop**: Define escalation points clearly
-
----
-
-## Step 1: Capability Discovery
-
-### 1.1 Initial Input
-
-The user has requested a capability: **$ARGUMENTS**
-
-### 1.2 Clarifying Questions
-
-Before writing the PRD, gather essential information. Ask the user:
-
-**Core Purpose:**
-- What problem does this capability solve?
-- What is the primary outcome when it runs successfully?
-- Who/what does this capability interact with? (APIs, platforms, users)
-
-**Proactivity Model:**
-- Should this run on a schedule? (e.g., daily at 9am)
-- Should this run in response to events? (e.g., new email arrives)
-- Should this only run when explicitly triggered by user?
-- Combination of above?
-
-**Autonomy Level:**
-- What should it do completely autonomously?
-- What should it ask permission for before acting?
-- What should it NEVER do without explicit approval?
-
-**Integration Requirements:**
-- What external services/APIs are needed?
-- Are there existing MCP servers for these services?
-- What credentials/authentication is required?
-
-**Success Criteria:**
-- How do we know the capability is working correctly?
-- What does a successful run look like?
-- What metrics matter?
-
----
-
-## Step 2: PRD Generation
-
-Based on the discovery conversation, generate a comprehensive PRD with ALL of the following sections:
-
----
-
-### PRD TEMPLATE
-
-```markdown
-# Capability PRD: [Capability Name]
-
-**Version**: 1.0.0
-**Created**: [Date]
-**Author**: [Name]
-**Status**: Draft
-
----
-
-## 1. Executive Summary
-
-### 1.1 One-Line Description
-[Single sentence describing what this capability does]
-
-### 1.2 Problem Statement
-[What problem does this solve? Why is it needed?]
-
-### 1.3 Solution Overview
-[High-level description of how the capability works]
-
-### 1.4 Success Metrics
-- [Metric 1: e.g., "Posts 3x per week without manual intervention"]
-- [Metric 2: e.g., "Identifies 5+ qualified leads per week"]
-- [Metric 3: e.g., "Zero missed scheduled posts"]
-
----
-
-## 2. Proactivity Map
-
-### 2.1 Trigger Types
-
-| Trigger | Schedule/Condition | Action |
-|---------|-------------------|--------|
-| [Trigger 1] | [e.g., "Cron: 0 10 * * 2,4,6"] | [What happens] |
-| [Trigger 2] | [e.g., "Heartbeat check every 4h"] | [What happens] |
-| [Trigger 3] | [e.g., "User message containing 'post now'"] | [What happens] |
-
-### 2.2 Proactivity Model
-- [ ] Scheduled Only (runs at fixed times)
-- [ ] Event-Driven (responds to external events)
-- [ ] Heartbeat-Based (periodic checks)
-- [ ] Reactive Only (only when user triggers)
-- [ ] Hybrid (combination - explain below)
-
-**Proactivity Details:**
-[Explain the proactivity model in detail. When does it wake up? What does it check? How often?]
-
-### 2.3 Quiet Hours
-- Should the capability respect quiet hours? [Yes/No]
-- Quiet hours: [e.g., "10pm - 8am local time"]
-- Behavior during quiet hours: [e.g., "Queue actions for morning"]
-
----
-
-## 3. Orchestration Layer
-
-### 3.1 Decision Logic
+## Project Structure Overview
 
 ```
-[Describe the decision tree the agent follows]
-
-Example:
-When triggered for posting:
-1. Check if content queue has pending items
-   └─ NO → Generate new content based on content pillars
-   └─ YES → Select next item from queue
-2. Check if within posting window
-   └─ NO → Queue for next window
-   └─ YES → Proceed to post
-3. Post to platform
-4. Log result to daily memory
-5. If engagement threshold met, notify user
+./                              ← Your project root
+├── docs/                       ← PLANNING (human reference, NOT deployed)
+│   ├── PRD.md
+│   ├── SOUL-additions.md
+│   ├── TOOLS-additions.md
+│   ├── memory-schema.md
+│   ├── test-cases.md
+│   └── phase-1-plan.md
+│
+├── workspace/                  ← LIVE AGENT (deployed to Clawdbot)
+│   ├── IDENTITY.md
+│   ├── SOUL.md
+│   ├── TOOLS.md
+│   ├── AGENTS.md
+│   ├── MEMORY.md
+│   ├── USER.md
+│   ├── memory/
+│   ├── skills/
+│   └── media/
+│
+├── skills/                     ← Shared/dev skills (optional)
+├── tests/                      ← Test scripts
+└── README.md
 ```
 
-### 3.2 SOUL.md Behavior Rules
+### docs/ vs workspace/ - The Key Difference
 
-[Draft the behavioral rules that will go into SOUL.md]
+| Aspect | docs/ | workspace/ |
+|--------|-------|------------|
+| **What** | Documentation | Configuration |
+| **Who reads** | You + Claude | Clawdbot agent |
+| **When** | During development | At runtime |
+| **Deploy?** | ❌ No | ✅ Yes |
+| **Changes** | By you manually | By agent (memory) + you |
+
+**Think of `docs/` as the blueprint and `workspace/` as the actual house.**
+
+---
+
+## Step 1: Create Project Structure
+
+```bash
+# Create documentation directory
+mkdir -p ./docs
+
+# Create workspace (deployable Clawdbot instance)
+mkdir -p ./workspace/memory
+mkdir -p ./workspace/skills
+mkdir -p ./workspace/media/clips
+mkdir -p ./workspace/media/downloads
+mkdir -p ./workspace/media/transcripts
+
+# Create shared directories
+mkdir -p ./skills
+mkdir -p ./tests
+
+# Create .gitignore
+cat > ./.gitignore << 'EOF'
+.env
+.DS_Store
+*.log
+node_modules/
+
+# Don't commit large media files
+workspace/media/clips/*.mp4
+workspace/media/downloads/*
+!workspace/media/downloads/.gitkeep
+
+# Memory files are agent-generated (optional to commit)
+# workspace/memory/*.json
+EOF
+
+# Create .env.example
+cat > ./.env.example << 'EOF'
+# Deployment Configuration
+CLAWD_MINI_HOST=your-macmini.local
+CLAWD_MINI_USER=your-username
+CLAWD_MINI_SSH_KEY=~/.ssh/id_ed25519
+CLAWD_MINI_WORKSPACE=~/clawd
+
+# Capability-specific secrets (add as needed)
+# GROK_API_KEY=your-grok-key
+# TELEGRAM_BOT_TOKEN=your-telegram-token
+# X_API_KEY=your-x-api-key
+EOF
+
+# Create .gitkeep files for empty directories
+touch ./workspace/media/clips/.gitkeep
+touch ./workspace/media/downloads/.gitkeep
+touch ./workspace/media/transcripts/.gitkeep
+touch ./workspace/memory/.gitkeep
+touch ./skills/.gitkeep
+touch ./tests/.gitkeep
+```
+
+---
+
+## Step 2: Initialize workspace/ Files
+
+### workspace/IDENTITY.md
 
 ```markdown
+---
+name: [Capability Name]
+emoji: [Relevant emoji]
+version: 1.0.0
+created: [Date]
+author: [Author]
+---
+
+# Identity
+
+You are **[Agent Name]**, [brief persona description].
+
+## Core Purpose
+
+[One sentence describing what this agent does]
+
+## Personality Traits
+
+- [Trait 1]
+- [Trait 2]
+- [Trait 3]
+```
+
+### workspace/SOUL.md
+
+```markdown
+---
+name: [Capability Name]
+version: 1.0.0
+---
+
+# Persona
+
+[Detailed persona description - who is this agent?]
+
+# Core Directives
+
+[The fundamental rules this agent follows]
+
+- [Directive 1]
+- [Directive 2]
+- [Directive 3]
+
+# Capabilities
+
 ## [Capability Name]
 
-### Triggers
-- [Trigger 1]
-- [Trigger 2]
+[Detailed behavioral rules for this capability]
 
-### Behavior
-When triggered, you will:
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
+### Proactivity Rules
 
-### Constraints
-- [Constraint 1: e.g., "Never post more than 3x per day"]
-- [Constraint 2: e.g., "Always use approved content pillars"]
+[When and how the agent acts autonomously]
 
-### Escalation
-Ask before acting if:
-- [Condition 1]
-- [Condition 2]
+### Decision Framework
+
+[How the agent makes decisions]
+
+### Autonomy Boundaries
+
+**You MAY autonomously**:
+- [Safe auto actions]
+
+**You MUST get approval before**:
+- [Actions requiring human confirmation]
+
+**You MUST NEVER**:
+- [Hard constraints]
 ```
 
-### 3.3 Tool Requirements
-
-| Tool | Purpose | Built-in or MCP? |
-|------|---------|------------------|
-| [Tool 1] | [Purpose] | [Built-in: Browser/Shell/Memory OR MCP: name] |
-| [Tool 2] | [Purpose] | [Built-in/MCP] |
-
----
-
-## 4. Autonomy Profile
-
-### 4.1 Autonomous Actions (No approval needed)
-- [Action 1: e.g., "Post pre-approved content"]
-- [Action 2: e.g., "Log activity to memory"]
-- [Action 3: e.g., "Read and analyze data"]
-
-### 4.2 Approval Required Actions
-- [Action 1: e.g., "Respond to DMs from new contacts"]
-- [Action 2: e.g., "Modify posting schedule"]
-- [Action 3: e.g., "Send emails to leads"]
-
-### 4.3 Prohibited Actions (Never do, even if asked)
-- [Action 1: e.g., "Delete content without backup"]
-- [Action 2: e.g., "Share credentials"]
-- [Action 3: e.g., "Make purchases"]
-
-### 4.4 Escalation Triggers
-The capability MUST ask the user when:
-- [Trigger 1: e.g., "Uncertainty about content appropriateness"]
-- [Trigger 2: e.g., "API errors after 3 retries"]
-- [Trigger 3: e.g., "Unusual patterns detected"]
-
----
-
-## 5. Memory Schema
-
-### 5.1 Long-Term Memory (MEMORY.md)
+### workspace/TOOLS.md
 
 ```markdown
-## Capability: [Name]
+---
+name: [Capability Name] Tools
+version: 1.0.0
+---
 
-### Configuration
-- [Config 1: e.g., "posting_schedule: Tue/Thu/Sat 10am"]
-- [Config 2: e.g., "content_pillars: tutorials, insights, news"]
+# Available Tools
 
-### Persistent State
-- [State 1: e.g., "approved_contacts: [list]"]
-- [State 2: e.g., "content_queue: [list]"]
+## [Tool 1 Name]
 
-### Learned Preferences
-- [Preference 1: e.g., "best_posting_times: {platform: times}"]
+**Purpose**: [What this tool does]
+**When to use**: [Conditions]
+
+**Usage**:
+\`\`\`
+[How to invoke]
+\`\`\`
+
+## [Tool 2 Name]
+
+[Continue for each tool...]
 ```
 
-### 5.2 Daily Log Entries (memory/YYYY-MM-DD.md)
+### workspace/AGENTS.md
 
 ```markdown
-## [Capability Name] Activity
+---
+name: [Capability Name] Agents
+version: 1.0.0
+---
 
-### [Timestamp]
-- Action: [what happened]
-- Result: [outcome]
-- Notes: [any observations]
+# Operating Instructions
+
+## Startup Behavior
+
+[What the agent does when it starts]
+
+## Scheduled Tasks
+
+| Schedule | Task | Description |
+|----------|------|-------------|
+| [Cron] | [Task name] | [What it does] |
+
+## Error Handling
+
+[How to handle common errors]
 ```
 
-### 5.3 Memory Access Patterns
+### workspace/MEMORY.md
 
-| Operation | Frequency | Data |
-|-----------|-----------|------|
-| Read MEMORY.md | [e.g., "On each trigger"] | [What data] |
-| Write MEMORY.md | [e.g., "On config change"] | [What data] |
-| Read daily log | [e.g., "Morning briefing"] | [What data] |
-| Write daily log | [e.g., "After each action"] | [What data] |
-
+```markdown
+---
+name: [Capability Name] Memory
+version: 1.0.0
+last_updated: [Timestamp]
 ---
 
-## 6. Integration Requirements
+# Persistent Memory
 
-### 6.1 External Services
+## Tracked Data
 
-| Service | Purpose | Auth Method | MCP Available? |
-|---------|---------|-------------|----------------|
-| [Service 1] | [Purpose] | [OAuth/API Key/etc.] | [Yes: name / No] |
-| [Service 2] | [Purpose] | [Auth method] | [Yes/No] |
+[What the agent remembers between sessions]
 
-### 6.2 API Requirements
+## Recent Activity
 
-**[Service 1 Name]:**
-- Endpoints needed: [list]
-- Rate limits: [limits]
-- Required scopes/permissions: [list]
+[Agent updates this section]
+```
 
-### 6.3 Credential Storage
-- [Credential 1]: Store in [.env / Clawdbot credentials / etc.]
-- [Credential 2]: Store in [location]
+### workspace/USER.md
 
+```markdown
+---
+name: User Profile
+version: 1.0.0
 ---
 
-## 7. Error Handling
+# User Preferences
 
-### 7.1 Error Categories
+## Communication Style
 
-| Error Type | Detection | Response | Escalation |
-|------------|-----------|----------|------------|
-| API Rate Limit | HTTP 429 | Wait and retry (3x) | After 3 failures |
-| Auth Failure | HTTP 401/403 | Log and escalate | Immediate |
-| Network Error | Timeout/connection | Retry with backoff | After 5 failures |
-| Data Validation | Invalid response | Log and skip | If critical data |
+- [Preference 1]
+- [Preference 2]
 
-### 7.2 Graceful Degradation
-When errors occur, the capability should:
-- [Behavior 1: e.g., "Continue with other tasks if one fails"]
-- [Behavior 2: e.g., "Queue failed actions for retry"]
-- [Behavior 3: e.g., "Notify user of degraded state"]
+## Notification Settings
 
----
+- [Setting 1]
+- [Setting 2]
 
-## 8. Test Cases
+## Known Context
 
-### TC-001: [Basic Functionality Test]
-- **Description**: [What this tests]
-- **Trigger**: [How to trigger]
-- **Input**: [Test input]
-- **Expected Output Contains**: [Key phrases/data in response]
-- **Expected Actions**: [Tools called, memory written, etc.]
-- **Pass Criteria**: [How to verify success]
-
-### TC-002: [Proactive Trigger Test]
-- **Description**: [What this tests]
-- **Trigger**: [Cron/heartbeat/event]
-- **Preconditions**: [Setup required]
-- **Expected Behavior**: [What should happen]
-- **Expected Memory**: [What should be logged]
-- **Pass Criteria**: [How to verify]
-
-### TC-003: [Error Handling Test]
-- **Description**: [What this tests]
-- **Trigger**: [How to trigger error condition]
-- **Error Condition**: [What error to simulate]
-- **Expected Behavior**: [Graceful handling]
-- **Should NOT**: [What must not happen]
-- **Pass Criteria**: [How to verify]
-
-### TC-004: [Escalation Test]
-- **Description**: [Test escalation triggers]
-- **Trigger**: [Condition that should escalate]
-- **Expected Behavior**: [Ask user, not act autonomously]
-- **Pass Criteria**: [Verification method]
-
-### TC-005: [Persistence Test]
-- **Description**: [Test state survives restart]
-- **Setup**: [Create state that should persist]
-- **Action**: [Restart daemon]
-- **Expected**: [State is preserved]
-- **Pass Criteria**: [Verification method]
-
----
-
-## 9. Phased Implementation
-
-### Phase 1: Core Orchestration
-- [ ] SOUL.md behavioral rules
-- [ ] Basic trigger handling
-- [ ] Memory schema setup
-- [ ] Manual testing
-
-### Phase 2: Proactivity
-- [ ] Cron job configuration
-- [ ] Heartbeat logic (if applicable)
-- [ ] Quiet hours handling
-- [ ] Automated trigger testing
-
-### Phase 3: Integration
-- [ ] External API integration
-- [ ] MCP server setup (if needed)
-- [ ] Error handling
-- [ ] Rate limit handling
-
-### Phase 4: Polish
-- [ ] Edge case handling
-- [ ] Escalation refinement
-- [ ] Performance optimization
-- [ ] Documentation
-
----
-
-## 10. Risks & Mitigations
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| [Risk 1] | [High/Med/Low] | [High/Med/Low] | [How to mitigate] |
-| [Risk 2] | [Likelihood] | [Impact] | [Mitigation] |
-
----
-
-## 11. Rollback Plan
-
-If the capability causes issues in production:
-
-1. **Immediate**: Disable cron triggers via [method]
-2. **Short-term**: Rollback via `/clawd-rollback last`
-3. **Investigation**: Check logs at `~/clawd/memory/YYYY-MM-DD.md`
-4. **Fix Forward**: Address issue and redeploy
-
----
-
-## 12. Open Questions
-
-- [ ] [Question 1 that needs resolution]
-- [ ] [Question 2 that needs resolution]
-
----
-
-## Appendix A: Reference Documentation
-
-- [Link to relevant API docs]
-- [Link to MCP server docs]
-- [Link to similar capability examples]
-
----
-
-## Approval
-
-- [ ] PRD reviewed by Marley
-- [ ] Questions resolved
-- [ ] Ready for /clawd-prime and /clawd-plan-phase
+[Things the agent should remember about the user]
 ```
 
 ---
 
-## Step 3: PRD Output
+## Step 3: Generate docs/ Files
 
-Save the completed PRD to:
-```
-~/clawd-dev-kit/capabilities/[capability-name]/PRD.md
+### docs/PRD.md
+
+Create a comprehensive PRD with these sections:
+
+```markdown
+# [Capability Name] - Product Requirements Document
+
+> **Capability Name**: `[kebab-case-name]`
+> **Version**: 1.0.0
+> **Author**: [Author]
+> **Created**: [Date]
+> **Status**: Draft - Pending Approval
+
+---
+
+## 1. Overview
+
+### 1.1 Problem Statement
+[What problem does this capability solve?]
+
+### 1.2 Solution Summary
+[How does this capability solve it?]
+
+### 1.3 Success Criteria
+- [ ] [Measurable outcome 1]
+- [ ] [Measurable outcome 2]
+- [ ] [Measurable outcome 3]
+
+---
+
+## 2. Capability Design
+
+### 2.1 Proactivity Model
+
+| Trigger Type | Schedule/Event | Action |
+|--------------|----------------|--------|
+| [Cron/Event/Manual] | [When] | [What happens] |
+
+### 2.2 Autonomy Boundaries
+
+| Action | Autonomy Level | Requires Approval |
+|--------|----------------|-------------------|
+| [Action 1] | Full Auto / Draft / Manual | Yes/No |
+
+### 2.3 External Integrations
+
+| Service | Purpose | Auth Method |
+|---------|---------|-------------|
+| [Service 1] | [Why needed] | [API Key/OAuth/etc] |
+
+---
+
+## 3. Implementation Phases
+
+### Phase 1: [Phase Name]
+**Focus**: [What this phase delivers]
+**Deliverables**:
+- [ ] [Deliverable 1]
+- [ ] [Deliverable 2]
+
+### Phase 2: [Phase Name]
+[Continue for all phases...]
+
+---
+
+## 4. Test Cases
+
+| Test ID | Description | Type |
+|---------|-------------|------|
+| TC-001 | [Test description] | [Unit/Integration/E2E] |
+
+---
+
+## 5. Risks & Mitigations
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| [Risk 1] | [High/Med/Low] | [How to address] |
+
+---
+
+## 6. Open Questions
+
+- [ ] [Question 1]
+- [ ] [Question 2]
 ```
 
-Create the capability directory structure:
-```bash
-mkdir -p ~/clawd-dev-kit/capabilities/[capability-name]
+### docs/SOUL-additions.md
+
+```markdown
+# SOUL.md Reference - [Capability Name]
+
+> **Note**: This is a REFERENCE copy. The live version is in `workspace/SOUL.md`.
+> Use this to track changes and review additions.
+
+---
+
+[Copy of the capability-specific SOUL.md content]
+```
+
+### docs/TOOLS-additions.md
+
+```markdown
+# TOOLS.md Reference - [Capability Name]
+
+> **Note**: This is a REFERENCE copy. The live version is in `workspace/TOOLS.md`.
+
+---
+
+[Copy of tool definitions]
+```
+
+### docs/memory-schema.md
+
+```markdown
+# Memory Schema - [Capability Name]
+
+> Defines the persistence structure used in `workspace/memory/`
+
+---
+
+## Files
+
+| File | Purpose | Schema |
+|------|---------|--------|
+| `[name].json` | [Purpose] | [Structure] |
+
+## Schema Definitions
+
+[Detailed schemas for each memory file]
+```
+
+### docs/test-cases.md
+
+```markdown
+# Test Cases - [Capability Name]
+
+> Validation tests for `/clawd-validate-phase`
+
+---
+
+## Test Summary
+
+| ID | Category | Description | Priority |
+|----|----------|-------------|----------|
+| TC-001 | Recognition | Agent knows capability | High |
+| TC-002 | Behavioral | Follows SOUL.md rules | High |
+
+## Detailed Test Cases
+
+### TC-001: Capability Awareness
+**Description**: Verify Clawdbot knows about this capability
+**Command**:
+\`\`\`bash
+clawdbot agent --message "What do you know about [capability name]?" --thinking low
+\`\`\`
+**Expected**: Response mentions the capability and its purpose
+**Pass Criteria**: Contains keywords: [keyword1], [keyword2]
+
+[Continue for each test...]
+```
+
+### docs/phase-1-plan.md
+
+```markdown
+# Phase 1 Implementation Plan
+
+> Implementation guide for Phase 1
+
+---
+
+## Deliverables
+
+1. [ ] [Deliverable 1]
+2. [ ] [Deliverable 2]
+
+## Implementation Steps
+
+[Detailed steps]
+
+## Files to Create/Modify
+
+- `workspace/SOUL.md` - Add [content]
+- `workspace/skills/[skill].md` - Create [skill]
 ```
 
 ---
 
-## Step 4: Human Validation Checkpoint
+## Step 4: Generate README.md
 
-Present the PRD to the user and ask:
+```markdown
+# [Capability Name]
 
-1. Does the Proactivity Map accurately reflect when this should run?
-2. Is the Autonomy Profile correct (what it can/cannot do alone)?
-3. Are the test cases comprehensive enough?
-4. Are there any missing integration requirements?
-5. Any open questions that need resolution before planning?
+> [One-line description]
 
-**Do NOT proceed to planning until the user approves the PRD.**
+## Status
+
+🚧 **In Development** - Phase 1
+
+## Quick Start
+
+\`\`\`bash
+# 1. Review the PRD
+cat docs/PRD.md
+
+# 2. Validate the workspace
+/clawd-validate-phase
+
+# 3. Execute Phase 1
+/clawd-execute-phase 1
+
+# 4. Deploy when ready
+/clawd-deploy
+\`\`\`
+
+## Project Structure
+
+\`\`\`
+.
+├── docs/                    # Planning documentation (NOT deployed)
+│   ├── PRD.md
+│   ├── phase-1-plan.md
+│   └── test-cases.md
+│
+├── workspace/               # Live agent files (DEPLOYED to Clawdbot)
+│   ├── SOUL.md
+│   ├── TOOLS.md
+│   ├── memory/
+│   └── skills/
+│
+└── README.md
+\`\`\`
+
+## Deployment
+
+The `workspace/` folder is deployed directly to your Clawdbot installation:
+
+\`\`\`bash
+# Validation (copies to ~/clawd-dev/)
+/clawd-validate-phase
+
+# Production (copies to ~/clawd/ on Mac Mini)
+/clawd-deploy
+\`\`\`
+```
 
 ---
 
-## Next Steps
+## Final Output Summary
 
-Once PRD is approved:
-1. Run `/clawd-prime [capability-name]` to load context
-2. Run `/clawd-plan-phase [capability-name]` to create implementation plan
+After generating all files:
+
+```
+✅ Project initialized!
+
+Structure created:
+├── docs/                        # Planning (NOT deployed)
+│   ├── PRD.md                   (XX KB)
+│   ├── SOUL-additions.md        (XX KB) - Reference copy
+│   ├── TOOLS-additions.md       (XX KB) - Reference copy
+│   ├── memory-schema.md         (XX KB)
+│   ├── test-cases.md            (XX KB)
+│   └── phase-1-plan.md          (XX KB)
+│
+├── workspace/                   # Live agent (DEPLOYED)
+│   ├── IDENTITY.md              (XX KB)
+│   ├── SOUL.md                  (XX KB) - THE live version
+│   ├── TOOLS.md                 (XX KB) - THE live version
+│   ├── AGENTS.md                (XX KB)
+│   ├── MEMORY.md                (XX KB)
+│   ├── USER.md                  (XX KB)
+│   ├── memory/                  (empty)
+│   ├── skills/                  (empty)
+│   └── media/                   (empty)
+│
+└── README.md
+
+Next steps:
+1. Review docs/PRD.md and workspace/SOUL.md
+2. Run: /clawd-validate-phase
+3. Run: /clawd-execute-phase 1
+```

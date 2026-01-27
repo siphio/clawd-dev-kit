@@ -11,8 +11,8 @@ You are creating a comprehensive implementation plan for a Clawdbot capability. 
 
 **MANDATORY READS**:
 1. `clawd-global-rules.md` - Development conventions
-2. `~/clawd-dev-kit/capabilities/$ARGUMENTS/PRD.md` - Requirements
-3. `~/clawd-dev-kit/capabilities/$ARGUMENTS/context.md` - Research context (from prime phase)
+2. `./docs/PRD.md` - Requirements (in current project folder)
+3. `./workspace/` - Current implementation state
 
 **Planning Principles**:
 - "Context is King" - Plans must be self-contained
@@ -28,8 +28,9 @@ You are creating a comprehensive implementation plan for a Clawdbot capability. 
 ### 1.1 Load Context
 
 Read all context documents:
-- PRD.md
-- context.md (from prime phase)
+- `./docs/PRD.md` - Product requirements
+- `./workspace/SOUL.md` - Current agent rules (if exists)
+- `./workspace/TOOLS.md` - Current tools (if exists)
 
 ### 1.2 Extract Planning Requirements
 
@@ -551,33 +552,126 @@ Design memory structure:
 
 ### 5.5 Skill Specification (If Needed)
 
-If custom skill is required:
+If custom skill is required, provide COMPLETE specifications including TypeScript code:
 
 ```markdown
 ## Skill Specification
 
-### SKILL.md
+### Skill Structure
+```
+workspace/skills/[skill-name]/
+├── SKILL.md           # Skill manifest
+├── index.ts           # TypeScript implementation
+├── types.ts           # Optional: Type definitions
+└── utils.ts           # Optional: Helper functions
+```
+
+### SKILL.md Content
 ```markdown
 ---
 name: [skill-name]
 description: [description]
 version: 1.0.0
+author: [author]
 requires:
-  - env: "[ENV_VAR]"
+  - node: ">=22"
+  - env: "[ENV_VAR_1]"
+  - env: "[ENV_VAR_2]"
 ---
 
 # [Skill Name]
 
 ## Purpose
-[Why this skill exists]
+[Why this skill exists - what problem it solves]
 
-## Tools
-- `[tool_name]` - [description]
+## Tools Provided
+- `[tool_name_1]` - [description]
+- `[tool_name_2]` - [description]
+
+## Usage Examples
+```typescript
+// Example usage of each tool
+const result = await tool_name_1({ param: "value" });
 ```
 
-### Implementation Notes
-- [Note 1]
-- [Note 2]
+## Configuration
+- `[ENV_VAR_1]` - [what it's for]
+- `[ENV_VAR_2]` - [what it's for]
+```
+
+### index.ts Implementation (REQUIRED)
+
+Provide the ACTUAL TypeScript code that will be executed:
+
+```typescript
+// workspace/skills/[skill-name]/index.ts
+
+import { z } from "zod";
+
+// ============================================================
+// TYPES
+// ============================================================
+
+interface [TypeName] {
+  [property]: [type];
+}
+
+// ============================================================
+// TOOL: [tool_name_1]
+// ============================================================
+
+export const [tool_name_1] = {
+  name: "[tool_name_1]",
+  description: "[What this tool does]",
+  parameters: z.object({
+    [param_name]: z.[type]().describe("[description]"),
+  }),
+
+  async execute(params: { [param_name]: [type] }): Promise<[ReturnType]> {
+    // Check for required env vars
+    const apiKey = process.env.[ENV_VAR];
+    if (!apiKey) {
+      return { success: false, error: "[ENV_VAR] not configured" };
+    }
+
+    try {
+      // Implementation
+      [actual implementation code]
+
+      return { success: true, data: [result] };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+};
+
+// ============================================================
+// TOOL: [tool_name_2]
+// ============================================================
+
+export const [tool_name_2] = {
+  // ... similar structure
+};
+
+// ============================================================
+// EXPORTS
+// ============================================================
+
+export default {
+  [tool_name_1],
+  [tool_name_2],
+};
+```
+
+### TypeScript Requirements
+- Use strict TypeScript (no `any` types where possible)
+- Use Zod for parameter validation
+- Handle all errors gracefully (never throw unhandled)
+- Use ESM modules
+- Include proper return types
 ```
 
 ---
@@ -613,9 +707,10 @@ Create atomic, actionable tasks:
 ### Stage 4: Skill Development (if needed)
 | Task ID | Description | Files | Validation |
 |---------|-------------|-------|------------|
-| T4.1 | Create SKILL.md | skills/[name]/SKILL.md | Valid YAML frontmatter |
-| T4.2 | Implement skill logic | skills/[name]/index.ts | TypeScript compiles |
-| T4.3 | Test skill tools | - | Tools callable |
+| T4.1 | Create skill folder | workspace/skills/[name]/ | Folder exists |
+| T4.2 | Create SKILL.md manifest | workspace/skills/[name]/SKILL.md | Valid YAML frontmatter |
+| T4.3 | Implement index.ts | workspace/skills/[name]/index.ts | `npx tsc --noEmit` passes |
+| T4.4 | Test skill tools | - | Tools callable via clawdbot |
 
 ### Stage 5: Testing & Validation
 | Task ID | Description | Files | Validation |
@@ -635,21 +730,65 @@ For each file that needs to be created or modified, provide EXACT content:
 
 ### SOUL.md Additions
 ```markdown
-[EXACT TEXT TO ADD TO SOUL.md]
+[EXACT TEXT TO ADD TO workspace/SOUL.md]
 ```
 
 ### TOOLS.md Additions
 ```markdown
-[EXACT TEXT TO ADD TO TOOLS.md]
+[EXACT TEXT TO ADD TO workspace/TOOLS.md]
 ```
 
 ### MEMORY.md Additions
 ```markdown
-[EXACT TEXT TO ADD TO MEMORY.md]
+[EXACT TEXT TO ADD TO workspace/MEMORY.md]
 ```
 
 ### Skill Files (if needed)
-[EXACT FILE CONTENTS]
+
+**IMPORTANT**: Skills require BOTH SKILL.md AND index.ts
+
+#### workspace/skills/[skill-name]/SKILL.md
+```markdown
+---
+name: [skill-name]
+description: [description]
+version: 1.0.0
+requires:
+  - env: "[ENV_VAR]"
+---
+
+[Full SKILL.md content...]
+```
+
+#### workspace/skills/[skill-name]/index.ts
+```typescript
+import { z } from "zod";
+
+// [Full TypeScript implementation...]
+// This must be ACTUAL WORKING CODE, not pseudocode
+
+export const [tool_name] = {
+  name: "[tool_name]",
+  description: "[description]",
+  parameters: z.object({ ... }),
+  async execute(params) {
+    // Actual implementation
+  },
+};
+
+export default { [tool_name] };
+```
+
+### Memory Files (if needed)
+
+#### workspace/memory/[filename].json
+```json
+{
+  "schema_version": "1.0",
+  "last_updated": "[timestamp]",
+  [Initial data structure...]
+}
+```
 ```
 
 ### 6.3 Validation Commands
@@ -696,8 +835,10 @@ echo "$result" | grep -q "[expected-content]" && echo "TC-001 PASS" || echo "TC-
 
 Save the complete plan to:
 ```
-~/clawd-dev-kit/capabilities/[capability-name]/plan.md
+./docs/phase-[X]-plan.md
 ```
+
+Where [X] is the phase number (e.g., `phase-1-plan.md`, `phase-2-plan.md`).
 
 ### 7.2 Plan Summary
 

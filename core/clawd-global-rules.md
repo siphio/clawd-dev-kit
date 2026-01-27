@@ -67,22 +67,40 @@ All capability state MUST survive daemon restarts. Use:
 
 ### 2.2 Capability Development Structure
 
-When developing a new capability, create:
+When developing a new capability, create a project folder with this structure:
 
 ```
-~/clawd-dev-kit/capabilities/<capability-name>/
-├── PRD.md                      # Product Requirements Document
-├── plan.md                     # Generated implementation plan
-├── SOUL-additions.md           # New SOUL.md content to merge
-├── TOOLS-additions.md          # New TOOLS.md content to merge
-├── cron-config.md              # Cron job definitions
-├── memory-schema.md            # What memory this capability uses
-├── test-cases.md               # Validation test cases
-└── skills/                     # Custom skills (if needed)
-    └── <skill-name>/
-        ├── SKILL.md
-        └── index.ts
+your-capability-project/
+│
+├── docs/                       # PLANNING (human reference, NOT deployed)
+│   ├── PRD.md                  # Product Requirements Document
+│   ├── SOUL-additions.md       # Reference copy of SOUL rules
+│   ├── TOOLS-additions.md      # Reference copy of tool definitions
+│   ├── memory-schema.md        # Memory file specifications
+│   ├── test-cases.md           # Validation test cases
+│   └── phase-X-plan.md         # Implementation plans per phase
+│
+├── workspace/                  # LIVE AGENT (deployed to Clawdbot)
+│   ├── IDENTITY.md             # Agent identity
+│   ├── SOUL.md                 # Complete behavioral rules
+│   ├── TOOLS.md                # Complete tool definitions
+│   ├── AGENTS.md               # Operating instructions
+│   ├── MEMORY.md               # Long-term memory
+│   ├── USER.md                 # User preferences
+│   ├── memory/                 # Daily memory files (JSON)
+│   ├── skills/                 # Custom TypeScript skills
+│   │   └── <skill-name>/
+│   │       ├── SKILL.md        # Skill manifest
+│   │       └── index.ts        # TypeScript implementation
+│   └── media/                  # Media assets
+│
+├── .env                        # Credentials (gitignored)
+└── README.md                   # Project documentation
 ```
+
+**Key distinction:**
+- `docs/` = Blueprint (planning, NOT deployed)
+- `workspace/` = The house (live config, DEPLOYED)
 
 ---
 

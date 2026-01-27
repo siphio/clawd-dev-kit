@@ -8,37 +8,52 @@
 
 ### 1.1 Prompt-Orchestration First, Code Second
 
-Clawdbot capabilities are primarily built through **prompt orchestration** in SOUL.md and TOOLS.md files, NOT through code. Only create TypeScript skills when built-in tools (browser, shell, cron, memory) are insufficient.
+Clawdbot capabilities are primarily built through **prompt orchestration** in SOUL.md, NOT through code. Only create TypeScript skills when built-in tools (browser, shell, cron, memory) are insufficient.
 
 **Decision Tree:**
 ```
 Can this be done with SOUL.md behavioral rules?
-  └─ YES → Write orchestration in SOUL.md
-  └─ NO → Can this be done with built-in tools (browser/shell)?
-           └─ YES → Document tool usage in TOOLS.md
+  └─ YES → Write rules in SOUL.md
+  └─ NO → Can built-in tools do it (browser/shell/memory)?
+           └─ YES → Write rules in SOUL.md for when/how to use them
            └─ NO → Is there an MCP server available?
-                    └─ YES → Use MCP server, document in TOOLS.md
-                    └─ NO → Create TypeScript skill (last resort)
+                    └─ YES → Use MCP, write rules in SOUL.md
+                    └─ NO → Create TypeScript skill in skills/
 ```
 
-### 1.2 Document Line Limits (Context Bloat Prevention)
+**Note:** TOOLS.md is for environment notes (hostnames, devices), NOT tool documentation.
 
-**HARD LIMITS - Strictly enforced to prevent context bloat:**
+### 1.2 Context Efficiency (CRITICAL)
 
-| Document | Minimum | Target | Maximum |
-|----------|---------|--------|---------|
-| `docs/PRD.md` | - | 600-800 | **1000** |
-| `docs/plans/plan-phase-X.md` | 500 | 550-650 | **700** |
+**Every character in workspace files costs tokens on EVERY conversation.**
+
+#### Planning Documents (line limits):
+| Document | Target | Maximum |
+|----------|--------|---------|
+| `docs/PRD.md` | 600-800 lines | **1000 lines** |
+| `docs/plans/plan-phase-X.md` | 550-650 lines | **700 lines** |
+
+#### Workspace Files (character limits - loaded every conversation):
+| File | Purpose | Max Chars |
+|------|---------|-----------|
+| `IDENTITY.md` | Name, emoji, one-liner | **500** |
+| `SOUL.md` | Terse behavioral rules only | **3,000** |
+| `TOOLS.md` | Environment notes only (hosts, cameras) | **1,500** |
+| `AGENTS.md` | Operating instructions | **2,000** |
+| `USER.md` | User preferences | **500** |
+
+#### Skills (loaded on-demand, still be concise):
+| File | Purpose | Max Chars |
+|------|---------|-----------|
+| `SKILL.md` | What agent needs to execute skill | **5,000** |
 
 **Enforcement:**
-- Validate with `wc -l` before finalizing any document
-- If PRD exceeds 1000 lines: condense ruthlessly, then consider splitting capability
-- If plan exceeds 700 lines: keep condensing until it fits (don't split)
-- Use bullet points, tables, and concise language
-- Never duplicate content that can be referenced
-- Cut explanations first, keep actionable specifics
+- Validate: `wc -c < ./workspace/SOUL.md` (check chars)
+- If over limit: condense ruthlessly
+- Use terse bullet format, not prose
+- Never duplicate content between files
 
-**Why this matters:** Context bloat degrades AI performance. Dense, concise documents enable better execution.
+**Philosophy: Minimum viable context - everything needed, nothing extra.**
 
 ### 1.3 Proactivity is Mandatory
 
@@ -70,12 +85,12 @@ All capability state MUST survive daemon restarts. Use:
 
 ```
 ~/clawd-dev/                    # Local test workspace
-├── SOUL.md                     # Agent persona and behavior rules
-├── TOOLS.md                    # Tool usage conventions
-├── AGENTS.md                   # Operating instructions
+├── IDENTITY.md                 # Name, emoji, one-liner (~500 chars)
+├── SOUL.md                     # Behavioral rules ONLY (~3,000 chars)
+├── TOOLS.md                    # Environment notes ONLY (~1,500 chars)
+├── AGENTS.md                   # Operating instructions (~2,000 chars)
+├── USER.md                     # User preferences (~500 chars)
 ├── MEMORY.md                   # Long-term persistent memory
-├── IDENTITY.md                 # Agent name, personality, emoji
-├── USER.md                     # User profile information
 ├── memory/                     # Daily logs
 │   └── YYYY-MM-DD.md          # One file per day
 └── skills/                     # Custom TypeScript skills (if needed)
@@ -95,17 +110,17 @@ your-capability-project/
 │   ├── PRD.md                  # Product Requirements Document
 │   ├── STATE.md                # Progress tracking (SOURCE OF TRUTH)
 │   ├── SOUL-additions.md       # Reference copy of SOUL rules
-│   ├── TOOLS-additions.md      # Reference copy of tool definitions
+│   ├── environment-notes.md    # Reference for TOOLS.md content
 │   ├── memory-schema.md        # Memory file specifications
 │   ├── test-cases.md           # Validation test cases
 │   └── plans/                  # Implementation plans
 │       └── plan-phase-X.md     # Per-phase implementation plan
 │
 ├── workspace/                  # LIVE AGENT (deployed to Clawdbot)
-│   ├── IDENTITY.md             # Agent identity
-│   ├── SOUL.md                 # Complete behavioral rules
-│   ├── TOOLS.md                # Complete tool definitions
-│   ├── AGENTS.md               # Operating instructions
+│   ├── IDENTITY.md             # Name, emoji, one-liner (~500 chars)
+│   ├── SOUL.md                 # Behavioral rules (~3,000 chars)
+│   ├── TOOLS.md                # Environment notes (~1,500 chars)
+│   ├── AGENTS.md               # Operating instructions (~2,000 chars)
 │   ├── MEMORY.md               # Long-term memory
 │   ├── USER.md                 # User preferences
 │   ├── memory/                 # Daily memory files (JSON)
@@ -257,44 +272,48 @@ Ask before acting if:
 
 ## 4. TOOLS.md Conventions
 
-### 4.1 Structure
+**CRITICAL: TOOLS.md is for environment-specific notes ONLY.**
+
+Skills define how tools work. TOOLS.md is YOUR local cheat sheet.
+
+### 4.1 What Goes in TOOLS.md
+
+✅ **DO include:**
+- Device names and locations
+- SSH hosts and aliases
+- Camera names and angles
+- Speaker/room names
+- API endpoint overrides
+- Preferred voices for TTS
+
+❌ **DO NOT include:**
+- Tool definitions (that's what SKILL.md is for)
+- Usage patterns or documentation
+- Error handling conventions
+- Parameter schemas
+
+### 4.2 Example TOOLS.md (~800 chars)
 
 ```markdown
-# Tool Conventions
+# Local Environment
 
-## Browser Tool
-<When and how to use browser automation>
+## Cameras
+- front-door → Entrance, motion-triggered
+- living-room → Main area, 180° wide
 
-## Shell Tool
-<When and how to use shell commands>
+## SSH Hosts
+- mac-mini → 192.168.1.100, user: marley
+- home-server → 192.168.1.50, user: admin
 
-## Memory Tool
-<Patterns for reading/writing memory>
+## Speakers
+- Kitchen HomePod → morning briefings
+- Office speakers → work notifications
 
-## <MCP Server Name>
-<How to use specific MCP tools>
+## TTS
+- Preferred voice: Nova (warm, British)
 ```
 
-### 4.2 Example Tool Convention
-
-```markdown
-## Instantly MCP
-
-### Available Tools
-- `mcp__instantly__create_lead` - Add lead to campaign
-- `mcp__instantly__get_campaigns` - List active campaigns
-- `mcp__instantly__send_email` - Send individual email
-
-### Usage Patterns
-- Always check campaign exists before adding leads
-- Rate limit: Max 100 leads per minute
-- Log all lead additions to daily memory
-
-### Error Handling
-- If API returns 429, wait 60 seconds and retry
-- If campaign not found, escalate to human
-- Log all errors to memory with timestamp
-```
+**Max: 1,500 characters. Keep it terse.**
 
 ---
 

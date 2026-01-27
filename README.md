@@ -87,6 +87,20 @@ your-capability-project/
 - Deploy by simply copying the `workspace/` folder
 - Clear separation between "what we planned" and "what runs"
 
+### Workspace File Limits (Context Efficiency)
+
+**Every character in workspace files costs tokens on EVERY conversation.**
+
+| File | Purpose | Max Chars |
+|------|---------|-----------|
+| IDENTITY.md | Name, emoji, one-liner | 500 |
+| SOUL.md | Terse behavioral rules | 3,000 |
+| TOOLS.md | Environment notes only | 1,500 |
+| AGENTS.md | Operating instructions | 2,000 |
+| SKILL.md | Skill docs (on-demand) | 5,000 |
+
+**Philosophy: Minimum viable context - everything needed, nothing extra.**
+
 ---
 
 ## 📁 Framework Structure

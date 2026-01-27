@@ -67,31 +67,48 @@ docs/test-cases.md           ◄──READ
 ~/clawd/                      # Only touched by deploy phase
 ```
 
-### 2. workspace/SOUL.md is THE Source
+### 2. Workspace File Limits (CRITICAL)
 
-When adding capability rules, edit `workspace/SOUL.md` directly:
+**Every character loads into context EVERY conversation. Be ruthlessly concise.**
+
+| File | Max Chars | Purpose |
+|------|-----------|---------|
+| IDENTITY.md | 500 | Name, emoji, one-liner |
+| SOUL.md | 3,000 | Behavioral rules ONLY |
+| TOOLS.md | 1,500 | Environment notes ONLY |
+| AGENTS.md | 2,000 | Operating instructions |
+| SKILL.md | 5,000 | Skill documentation (loaded on-demand) |
+
+**Validate before finishing:** `wc -c < ./workspace/SOUL.md`
+
+### 3. workspace/SOUL.md - Terse Rules Only
+
+Write behavioral rules in terse bullet format, NOT prose:
 
 ```markdown
-# In workspace/SOUL.md, add to the Capabilities section:
+## News Curator
 
-## AI News Curator
+### Triggers
+- cron `0 */2 * * *` → scan sources
+- cron `0 8 * * *` → daily digest
+- msg contains "news" → scan on-demand
 
-You are an elite AI news analyst and content creator...
+### Tiers
+- T1 (immediate): model releases, acquisitions, policy
+- T2 (important): research papers, funding, partnerships
+- T3 (notable): tutorials, opinions, minor updates
 
-### News Priority Hierarchy
+### Actions
+- T1 → alert telegram immediately
+- T2 → batch in digest, alert if >3
+- T3 → digest only
 
-**TIER 1 - IMMEDIATE** (Alert within minutes):
-- Major model releases (GPT-5, Claude 4, Gemini 2, etc.)
-- Company acquisitions/mergers in AI space
-...
-
-### Proactivity Rules
-
-**Scheduled Behaviors**:
-- Every 2 hours: Scan configured news sources
-- 8:00 AM daily: Generate daily digest
-...
+### Autonomy
+- Auto-post T1, ask for T2+
+- Escalate: >10 stories, any failures
 ```
+
+**~600 chars vs ~2000 for prose. Same information, 70% smaller.**
 
 ---
 
@@ -118,53 +135,62 @@ workspace/skills/<skill-name>/
 └── README.md          # Optional: Development notes
 ```
 
-### SKILL.md Format
+### SKILL.md Format (Max 5,000 chars)
+
+**SKILL.md is loaded on-demand but still costs tokens. Keep it concise.**
+
+Include ONLY:
+- What the skill does (one line)
+- Tools provided (name + one-line description)
+- Parameters (name, type, required)
+- One usage example per tool
+- Required env vars
+
+Do NOT include:
+- Verbose explanations
+- Multiple examples
+- Implementation details
+- Error handling docs (handle in code)
 
 ```markdown
 ---
 name: ai-news-scanner
-description: Scans X/Twitter and news sources for AI-related stories using Grok API
-version: 1.0.0
-author: Clawdbot
-requires:
-  - node: ">=22"
-  - env: "GROK_API_KEY"
-  - env: "TELEGRAM_BOT_TOKEN"
-  - env: "TELEGRAM_CHAT_ID"
+description: Scan news sources, send Telegram alerts
+metadata: {"clawdbot":{"requires":{"env":["GROK_API_KEY","TELEGRAM_BOT_TOKEN"]}}}
 ---
 
-# AI News Scanner
+# ai-news-scanner
 
-## Purpose
+## Tools
 
-Provides tools for scanning news sources and sending alerts via Telegram.
+### scan_ai_news
+Scan sources for AI news.
+- `max_results` (int, optional): Max stories, default 10
+- `hours_back` (int, optional): Lookback hours, default 2
+- Returns: `{stories: [{headline, url, tier}]}`
 
-## Tools Provided
+### send_telegram_alert
+Send alert to Telegram.
+- `headline` (string, required): Story headline
+- `url` (string, required): Story URL
+- `tier` (int, required): Priority 1-3
+- Returns: `{success: bool, messageId?: int}`
 
-- `scan_ai_news` - Scan configured sources for AI news stories
-- `send_telegram_alert` - Send formatted alert to Telegram
-- `check_story_posted` - Check if a story has already been posted
+### check_story_posted
+Check if story was already posted.
+- `url` (string, required): URL to check
+- Returns: `{posted: bool, postedAt?: string}`
 
-## Usage Examples
-
+## Example
+```ts
+const {stories} = await scan_ai_news({hours_back: 2});
+if (stories[0].tier === 1) {
+  await send_telegram_alert(stories[0]);
+}
 ```
-// Scan for news
-const stories = await scan_ai_news({ max_results: 10, hours_back: 2 });
-
-// Send alert for a story
-await send_telegram_alert({ story: stories[0], tier: 1 });
-
-// Check if already posted
-const posted = await check_story_posted({ story_id: "abc123" });
 ```
 
-## Configuration
-
-Environment variables required:
-- `GROK_API_KEY` - xAI API key for Grok Live Search
-- `TELEGRAM_BOT_TOKEN` - Telegram bot token
-- `TELEGRAM_CHAT_ID` - Target chat ID for alerts
-```
+**~1,200 chars. Contains everything agent needs. Nothing extra.**
 
 ### index.ts Implementation
 
@@ -474,10 +500,11 @@ Create JSON data files for persistence:
 - [ ] Add proactivity rules if this phase includes scheduled behaviors
 - [ ] Update autonomy boundaries if needed
 
-### Step 3: Update workspace/TOOLS.md
-- [ ] Add any new tool definitions (MCP or skill tools)
-- [ ] Document parameters and usage patterns
-- [ ] Add error handling conventions
+### Step 3: Update workspace/TOOLS.md (environment notes only)
+- [ ] Add device names/locations if skill uses hardware
+- [ ] Add SSH hosts if skill needs remote access
+- [ ] Add API endpoint overrides if non-default
+- [ ] **DO NOT add tool definitions here** (that goes in SKILL.md)
 
 ### Step 4: Create Skills (if needed)
 - [ ] Create skill folder: `workspace/skills/<skill-name>/`
@@ -537,7 +564,7 @@ Create JSON data files for persistence:
 
 Files modified in workspace/:
 ├── SOUL.md              (+XX lines) - Added [capability rules]
-├── TOOLS.md             (+XX lines) - Added [tool definitions]
+├── TOOLS.md             (+XX chars) - Added [environment notes]
 ├── AGENTS.md            (+XX lines) - Added [scheduled tasks]
 ├── MEMORY.md            (+XX lines) - Added [memory schema]
 ├── skills/
@@ -592,7 +619,7 @@ Claude:
 1. Reads docs/PRD.md - understands Phase 1 requirements
 2. Reads docs/plans/plan-phase-1.md - understands deliverables
 3. Edits workspace/SOUL.md - adds news curator persona & rules
-4. Edits workspace/TOOLS.md - adds skill tool definitions
+4. Edits workspace/TOOLS.md - adds environment notes (if needed)
 5. Creates workspace/skills/ai-news-scanner/SKILL.md - skill manifest
 6. Creates workspace/skills/ai-news-scanner/index.ts - ACTUAL TypeScript
 7. Creates workspace/memory/posted-stories.json - tracking data

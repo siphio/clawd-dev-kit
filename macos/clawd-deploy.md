@@ -178,7 +178,75 @@ echo "✅ workspace/ deployed to $CLAWD_MINI_HOST:$CLAWD_MINI_WORKSPACE/"
 
 ---
 
-## Step 4: Start Production Daemon
+## Step 4: Install Skill Dependencies
+
+```bash
+echo "📦 Installing skill dependencies on Mac Mini..."
+
+ssh -i "$CLAWD_MINI_SSH_KEY" "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" << 'ENDSSH'
+    cd ~/clawd/skills
+
+    # Find all skills with package.json and install deps
+    INSTALLED=0
+    for skill_dir in */; do
+        if [ -f "$skill_dir/package.json" ]; then
+            echo "Installing dependencies for: $skill_dir"
+            cd "$skill_dir"
+            npm install --production 2>/dev/null || {
+                echo "⚠️  npm install failed for $skill_dir"
+            }
+            cd ..
+            INSTALLED=$((INSTALLED + 1))
+        fi
+    done
+
+    if [ $INSTALLED -eq 0 ]; then
+        echo "No skills with package.json found (skills may use built-in modules only)"
+    else
+        echo "✅ Installed dependencies for $INSTALLED skill(s)"
+    fi
+ENDSSH
+
+echo "✅ Skill dependencies installed"
+```
+
+### Check for Required Binaries
+
+```bash
+echo "🔍 Checking required binaries on Mac Mini..."
+
+ssh -i "$CLAWD_MINI_SSH_KEY" "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" << 'ENDSSH'
+    # Check common required binaries
+    MISSING=""
+
+    command -v node >/dev/null || MISSING="$MISSING node"
+    command -v npm >/dev/null || MISSING="$MISSING npm"
+
+    # Check skill-specific requirements from SKILL.md metadata
+    for skill_dir in ~/clawd/skills/*/; do
+        if [ -f "$skill_dir/SKILL.md" ]; then
+            # Extract bins from metadata if present
+            BINS=$(grep -o '"bins":\[[^]]*\]' "$skill_dir/SKILL.md" 2>/dev/null | grep -o '"[^"]*"' | tr -d '"' || true)
+            for bin in $BINS; do
+                if ! command -v "$bin" >/dev/null 2>&1; then
+                    MISSING="$MISSING $bin"
+                fi
+            done
+        fi
+    done
+
+    if [ -n "$MISSING" ]; then
+        echo "⚠️  Missing binaries:$MISSING"
+        echo "   Install them on Mac Mini before using related skills"
+    else
+        echo "✅ All required binaries available"
+    fi
+ENDSSH
+```
+
+---
+
+## Step 5: Start Production Daemon
 
 ```bash
 echo "▶️  Starting production daemon..."
@@ -202,7 +270,7 @@ echo "✅ Production daemon started"
 
 ---
 
-## Step 5: Verify Deployment
+## Step 6: Verify Deployment
 
 ```bash
 echo "🏥 Verifying deployment..."
@@ -219,7 +287,7 @@ ENDSSH
 
 ---
 
-## Step 6: Deployment Complete
+## Step 7: Deployment Complete
 
 ```bash
 echo ""
@@ -254,8 +322,10 @@ echo ""
 # 2. Creates safety backup on Mac Mini
 # 3. Stops production daemon
 # 4. Copies entire workspace/ folder to ~/clawd/ on Mini
-# 5. Starts production daemon
-# 6. Verifies deployment
+# 5. Installs skill dependencies (npm install for each skill)
+# 6. Checks required binaries are available
+# 7. Starts production daemon
+# 8. Verifies deployment
 
 # The key insight:
 # workspace/ IS your Clawdbot

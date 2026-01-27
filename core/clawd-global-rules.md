@@ -74,6 +74,7 @@ your-capability-project/
 │
 ├── docs/                       # PLANNING (human reference, NOT deployed)
 │   ├── PRD.md                  # Product Requirements Document
+│   ├── STATE.md                # Progress tracking (SOURCE OF TRUTH)
 │   ├── SOUL-additions.md       # Reference copy of SOUL rules
 │   ├── TOOLS-additions.md      # Reference copy of tool definitions
 │   ├── memory-schema.md        # Memory file specifications
@@ -102,6 +103,49 @@ your-capability-project/
 **Key distinction:**
 - `docs/` = Blueprint (planning, NOT deployed)
 - `workspace/` = The house (live config, DEPLOYED)
+
+### 2.1 STATE.md - Progress Tracking
+
+The `docs/STATE.md` file is the **source of truth** for development progress:
+
+```markdown
+---
+capability: my-capability
+created: 2024-01-27
+last_updated: 2024-01-28
+current_phase: 2
+total_phases: 4
+status: validated
+---
+
+# Development State
+
+## Phase Progress
+
+| Phase | Status | Planned | Executed | Validated |
+|-------|--------|---------|----------|-----------|
+| 1 | validated | 2024-01-27 | 2024-01-27 | 2024-01-28 |
+| 2 | validated | 2024-01-28 | 2024-01-28 | 2024-01-28 |
+| 3 | pending | - | - | - |
+| 4 | pending | - | - | - |
+
+## Activity Log
+
+### 2024-01-28 - Phase 2 Validated
+- All tests passed
+- Next: Run `/clawd-plan-phase 3`
+
+## Next Action
+**Run**: `/clawd-plan-phase 3`
+```
+
+**Status values:**
+- `initialized` - PRD created, no planning yet
+- `planned` - Current phase planned, ready to execute
+- `executed` - Current phase built, ready to validate
+- `validated` - Current phase tested and passed
+
+**CRITICAL**: Every command (`/clawd-plan-phase`, `/clawd-execute-phase`, `/clawd-validate-phase`) must update STATE.md after completion.
 
 ---
 

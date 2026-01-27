@@ -56,6 +56,49 @@ You are creating a comprehensive Product Requirements Document and initializing 
 # Create documentation directory with plans subfolder
 mkdir -p ./docs/plans
 
+# Create STATE.md for progress tracking
+cat > ./docs/STATE.md << 'EOF'
+---
+capability: [CAPABILITY_NAME]
+created: [DATE]
+last_updated: [DATE]
+current_phase: 0
+total_phases: [X]
+status: initialized
+---
+
+# Development State
+
+## Phase Progress
+
+| Phase | Status | Planned | Executed | Validated |
+|-------|--------|---------|----------|-----------|
+| 1 | pending | - | - | - |
+| 2 | pending | - | - | - |
+| 3 | pending | - | - | - |
+
+## Activity Log
+
+### [DATE] - Project Initialized
+- Created PRD and project structure
+- Total phases defined: [X]
+- Next: Run `/clawd-plan-phase 1`
+
+---
+
+## Status Key
+
+- `pending` - Not started
+- `planned` - Plan created in docs/plans/
+- `executed` - Implementation complete in workspace/
+- `validated` - Tests passed
+- `deployed` - Live in production
+
+## Next Action
+
+**Run**: `/clawd-plan-phase 1`
+EOF
+
 # Create workspace (deployable Clawdbot instance)
 mkdir -p ./workspace/memory
 mkdir -p ./workspace/skills
@@ -530,6 +573,20 @@ The `workspace/` folder is deployed directly to your Clawdbot installation:
 
 ---
 
+## Step 5: Update STATE.md
+
+After creating the PRD, update `docs/STATE.md` with:
+- The capability name
+- Total number of phases from the PRD
+- Generate the phase progress table with all phases
+
+```bash
+# Update STATE.md with actual values from PRD
+# Replace placeholders with real data
+```
+
+---
+
 ## Final Output Summary
 
 After generating all files:
@@ -540,12 +597,12 @@ After generating all files:
 Structure created:
 ├── docs/                        # Planning (NOT deployed)
 │   ├── PRD.md                   (XX KB)
+│   ├── STATE.md                 (XX KB) - Progress tracking
 │   ├── SOUL-additions.md        (XX KB) - Reference copy
 │   ├── TOOLS-additions.md       (XX KB) - Reference copy
 │   ├── memory-schema.md         (XX KB)
 │   ├── test-cases.md            (XX KB)
-│   └── plans/
-│       └── plan-phase-1.md      (XX KB)
+│   └── plans/                   (empty - plans created later)
 │
 ├── workspace/                   # Live agent (DEPLOYED)
 │   ├── IDENTITY.md              (XX KB)
@@ -560,8 +617,12 @@ Structure created:
 │
 └── README.md
 
+Current State (from docs/STATE.md):
+- Phase: 0 of X
+- Status: initialized
+- Next: Plan Phase 1
+
 Next steps:
-1. Review docs/PRD.md and workspace/SOUL.md
-2. Run: /clawd-validate-phase
-3. Run: /clawd-execute-phase 1
+1. Review docs/PRD.md
+2. Run: /clawd-plan-phase 1
 ```

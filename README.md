@@ -44,6 +44,7 @@ your-capability-project/
 │
 ├── 📂 docs/                        ← PLANNING (human reference, NOT deployed)
 │   ├── PRD.md                      # Product Requirements Document
+│   ├── STATE.md                    # Progress tracking (source of truth)
 │   ├── SOUL-additions.md           # Behavioral rules to add
 │   ├── TOOLS-additions.md          # Tool definitions to add
 │   ├── memory-schema.md            # Memory file specifications
@@ -190,8 +191,8 @@ clawd-dev-kit/
 │                                                                          │
 │   ./docs/                      ./workspace/                              │
 │   ├── PRD.md                   ├── IDENTITY.md                          │
-│   ├── SOUL-additions.md        ├── SOUL.md ◄─── THE DEPLOYABLE UNIT    │
-│   ├── TOOLS-additions.md       ├── TOOLS.md                             │
+│   ├── STATE.md ◄─── PROGRESS   ├── SOUL.md ◄─── THE DEPLOYABLE UNIT    │
+│   ├── SOUL-additions.md        ├── TOOLS.md                             │
 │   ├── test-cases.md            ├── AGENTS.md                            │
 │   └── plans/                   ├── memory/                              │
 │       └── plan-phase-X.md      └── skills/                               │

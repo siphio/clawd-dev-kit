@@ -12,43 +12,50 @@ You are preparing to develop a Clawdbot capability. This command loads project c
 
 ---
 
-## Step 1: Load Project Files
+## Step 1: Load State File (CRITICAL)
 
-### 1.1 Read Global Rules
+### 1.1 Read STATE.md First
 
-First, understand the development conventions:
+**This is the source of truth for project progress.**
 
 ```
-Read: clawd-global-rules.md
+Read: ./docs/STATE.md
 ```
 
-### 1.2 Read PRD
+If STATE.md doesn't exist:
+- Check if PRD exists (`./docs/PRD.md`)
+- If no PRD: instruct user to run `/clawd-create-prd [capability-name]` first
+- If PRD exists but no STATE.md: this is a legacy project, create STATE.md manually
 
-Load the Product Requirements Document:
+### 1.2 Parse State Information
+
+From STATE.md YAML frontmatter, extract:
+- `capability`: Project name
+- `current_phase`: Which phase we're on
+- `total_phases`: Total phases in PRD
+- `status`: Current status (initialized/planned/executed/validated/deployed)
+- `last_updated`: When last action occurred
+
+From the Phase Progress table, extract:
+- Status of each phase (pending/planned/executed/validated)
+- Dates for each milestone
+
+### 1.3 Read PRD for Context
 
 ```
 Read: ./docs/PRD.md
 ```
 
-If PRD doesn't exist:
-- Stop and instruct user to run `/clawd-create-prd [capability-name]` first
-- Do not proceed without an approved PRD
+Get a summary of:
+- Capability description
+- Phase breakdown (verify matches STATE.md total_phases)
+- Key integrations
 
-### 1.3 Check for Existing Planning Documents
+### 1.4 Read Global Rules
 
-Check what planning work has been done:
-
-```bash
-ls -la ./docs/
-ls -la ./docs/plans/
 ```
-
-Look for:
-- `SOUL-additions.md` - Behavioral rules planned?
-- `TOOLS-additions.md` - Tool conventions planned?
-- `memory-schema.md` - Memory structure planned?
-- `test-cases.md` - Test cases defined?
-- `plans/plan-phase-X.md` - Any phase plans exist?
+Read: clawd-global-rules.md
+```
 
 ---
 
@@ -83,68 +90,108 @@ ls -la ./workspace/skills/ 2>/dev/null || echo "No skills yet"
 
 ---
 
-## Step 3: Determine Development Phase
+## Step 3: Determine Development Phase (from STATE.md)
 
-### 3.1 Assess Progress
+### 3.1 Read Current State
 
-Based on what exists, determine current phase:
+The `docs/STATE.md` file tells you EXACTLY where you are:
 
-| State | Current Phase | Next Step |
-|-------|---------------|-----------|
-| Only PRD exists | Phase 0 | Run `/clawd-plan-phase` to plan Phase 1 |
-| PRD + plans/plan-phase-1.md | Phase 1 Planning Done | Run `/clawd-execute-phase 1` |
-| workspace/ has SOUL.md started | Phase 1 In Progress | Continue execution or validate |
-| Phase 1 complete, no phase-2-plan | Between Phases | Run `/clawd-plan-phase` for Phase 2 |
-| All phases complete | Done | Run `/clawd-validate-phase` then `/clawd-deploy` |
+| STATE.md Status | Current Phase | Next Step |
+|-----------------|---------------|-----------|
+| `status: initialized` | Phase 0 | Run `/clawd-plan-phase 1` |
+| `status: planned` | Phase X planned | Run `/clawd-execute-phase X` |
+| `status: executed` | Phase X built | Run `/clawd-validate-phase` |
+| `status: validated` + more phases | Phase X done | Run `/clawd-plan-phase [X+1]` |
+| `status: validated` + all phases done | Complete | Run `/clawd-deploy` |
+| `status: deployed` | In production | Development complete |
 
-### 3.2 Check for Incomplete Work
+### 3.2 Use STATE.md Data (Not Guessing)
 
-Look for signs of incomplete work:
-- Partially written SOUL.md sections
-- TODO comments in workspace/ files
-- Phase plan with unchecked tasks
+**DO NOT guess based on file existence.** Use the explicit state:
+
+```markdown
+From STATE.md:
+- current_phase: X
+- total_phases: Y
+- status: [current status]
+
+Therefore:
+- Phase X of Y
+- Status: [status]
+- Next action: [determined by status and remaining phases]
+```
+
+### 3.3 Verify State Matches Reality (Sanity Check)
+
+Quick verification that STATE.md is accurate:
+
+```bash
+# If status says "planned", plan file should exist
+ls ./docs/plans/plan-phase-$CURRENT_PHASE.md
+
+# If status says "executed", workspace should have content
+ls ./workspace/SOUL.md
+ls ./workspace/skills/
+
+# If status says "validated", we should NOT be fixing workspace issues
+```
+
+If STATE.md doesn't match reality, flag this to the user and help reconcile.
 
 ---
 
-## Step 4: Generate Context Summary
+## Step 4: Generate Context Summary (from STATE.md)
 
-Compile a brief context summary:
+Compile a brief context summary **using STATE.md as the source of truth**:
 
 ```markdown
 # Context: [Capability Name]
 
+## State Summary (from docs/STATE.md)
+
+| Field | Value |
+|-------|-------|
+| **Current Phase** | [X] of [total_phases] |
+| **Status** | [status from STATE.md] |
+| **Last Updated** | [last_updated from STATE.md] |
+
+## Phase Progress
+
+| Phase | Status | Planned | Executed | Validated |
+|-------|--------|---------|----------|-----------|
+| 1 | [status] | [date] | [date] | [date] |
+| 2 | [status] | [date] | [date] | [date] |
+| ... | ... | ... | ... | ... |
+
 ## PRD Summary
 - **Name**: [from PRD]
 - **Description**: [one-line from PRD]
-- **Proactivity Model**: [Scheduled/Event/Heartbeat/Reactive]
+- **Total Phases**: [X]
 - **Key Integrations**: [list from PRD]
 
-## Current Development State
+## Current Phase Details
 
-### Planning Documents (docs/)
-- PRD.md: ✅ Exists
-- SOUL-additions.md: [✅/❌]
-- TOOLS-additions.md: [✅/❌]
-- test-cases.md: [✅/❌]
-- plans/plan-phase-X.md: [list what exists]
+**Phase [X]: [Phase Name from PRD]**
+- Status: [planned/executed/validated]
+- Focus: [what this phase delivers]
 
-### Implementation (workspace/)
-- SOUL.md: [Not started / In progress / Complete]
-- TOOLS.md: [Not started / In progress / Complete]
-- Skills: [None / list created skills]
-- Memory: [Not configured / Configured]
+## Next Action
 
-## Current Phase
-**Phase**: [X]
-**Status**: [Not started / In progress / Complete]
+Based on STATE.md:
+- **Status**: [current status]
+- **Phases remaining**: [total - current]
+- **Recommended**: `/clawd-[next-command]`
 
-## Next Step
-**Recommended Command**: `/clawd-[next-command]`
-**Reason**: [why this is the next step]
+### Decision Logic:
+- If `status: initialized` → `/clawd-plan-phase 1`
+- If `status: planned` → `/clawd-execute-phase [X]`
+- If `status: executed` → `/clawd-validate-phase`
+- If `status: validated` AND `current_phase < total_phases` → `/clawd-plan-phase [X+1]`
+- If `status: validated` AND `current_phase == total_phases` → `/clawd-deploy`
 
 ## Quick Notes
-- [Any important observations]
-- [Blockers or concerns]
+- [Any observations from Activity Log]
+- [Any blockers noted]
 ```
 
 ---
@@ -172,16 +219,20 @@ Before proceeding:
 
 ---
 
-## Next Steps
+## Next Steps (Determined by STATE.md)
 
-Based on current phase:
+**Use the status from STATE.md to determine next action:**
 
-| If Current State | Run Next |
-|------------------|----------|
-| Need to plan | `/clawd-plan-phase [phase-number]` |
-| Plan exists, need to build | `/clawd-execute-phase [phase-number]` |
-| Built, need to test | `/clawd-validate-phase` |
-| Tested, need to deploy | `/clawd-deploy` |
+| STATE.md Status | Condition | Next Command |
+|-----------------|-----------|--------------|
+| `initialized` | - | `/clawd-plan-phase 1` |
+| `planned` | - | `/clawd-execute-phase [current_phase]` |
+| `executed` | - | `/clawd-validate-phase` |
+| `validated` | `current_phase < total_phases` | `/clawd-plan-phase [current_phase + 1]` |
+| `validated` | `current_phase == total_phases` | `/clawd-deploy` |
+| `deployed` | - | Development complete! |
+
+**NEVER suggest deploy unless ALL phases are validated.**
 
 ---
 

@@ -840,7 +840,34 @@ Save the complete plan to:
 
 Where [X] is the phase number (e.g., `plan-phase-1.md`, `plan-phase-2.md`).
 
-### 7.2 Plan Summary
+### 7.2 Update STATE.md
+
+**CRITICAL**: Update `docs/STATE.md` to track progress:
+
+1. Update the YAML frontmatter:
+   - `current_phase: [X]`
+   - `status: planned`
+   - `last_updated: [current date]`
+
+2. Update the Phase Progress table:
+   - Set Phase [X] Status to `planned`
+   - Set Phase [X] Planned date to current date
+
+3. Add to Activity Log:
+```markdown
+### [DATE] - Phase [X] Planned
+- Created plan: docs/plans/plan-phase-[X].md
+- Tasks defined: [count]
+- Next: Run `/clawd-execute-phase [X]`
+```
+
+4. Update Next Action:
+```markdown
+## Next Action
+**Run**: `/clawd-execute-phase [X]`
+```
+
+### 7.3 Plan Summary
 
 Generate executive summary:
 

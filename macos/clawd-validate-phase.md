@@ -253,21 +253,114 @@ echo "✅ Test instance reverted to pre-validation state"
 
 ---
 
-## Step 6: Next Steps
+## Step 6: Update STATE.md
+
+**CRITICAL**: After validation, update `docs/STATE.md`:
+
+### Read Current State First
+
+```bash
+# Check current phase and total phases
+cat ./docs/STATE.md | head -10
+```
 
 ### If ALL Tests Pass ✅
 
+1. Update the YAML frontmatter:
+   - `status: validated`
+   - `last_updated: [current date]`
+
+2. Update the Phase Progress table:
+   - Set current Phase Status to `validated`
+   - Set Validated date to current date
+
+3. Add to Activity Log:
+```markdown
+### [DATE] - Phase [X] Validated
+- All tests passed
+- Test results: [X/X passed]
+- Next: [See Next Action below]
 ```
-🎉 Validation successful!
 
-All tests passed. The capability is ready for deployment.
+4. **IMPORTANT - Determine Next Action**:
 
-Your workspace/ folder is validated and ready to deploy.
+   **Check `docs/STATE.md`** for `current_phase` vs `total_phases`:
+
+   - If `current_phase < total_phases`:
+     ```markdown
+     ## Next Action
+     **Run**: `/clawd-plan-phase [current_phase + 1]`
+
+     Phase [X] of [total] validated. [Y] phases remaining.
+     ```
+
+   - If `current_phase == total_phases` (ALL phases complete):
+     ```markdown
+     ## Next Action
+     **Run**: `/clawd-deploy`
+
+     All [total] phases validated! Ready for production deployment.
+     ```
+
+### If Some Tests Fail ❌
+
+1. Keep status as `executed` (not validated)
+
+2. Add to Activity Log:
+```markdown
+### [DATE] - Phase [X] Validation FAILED
+- Tests failed: [X/Y]
+- Issues: [list failures]
+- Next: Fix workspace/ and re-validate
+```
+
+3. Update Next Action:
+```markdown
+## Next Action
+**Fix issues in workspace/, then run**: `/clawd-validate-phase`
+```
+
+---
+
+## Step 7: Present Next Steps
+
+### If ALL Tests Pass ✅
+
+**Check STATE.md to determine correct recommendation:**
+
+```bash
+# Get phase info
+CURRENT=$(grep "current_phase:" ./docs/STATE.md | cut -d' ' -f2)
+TOTAL=$(grep "total_phases:" ./docs/STATE.md | cut -d' ' -f2)
+```
+
+**If more phases remain** (current < total):
+```
+🎉 Phase [X] validation successful!
+
+All tests passed for Phase [X].
+
+Current progress: Phase [X] of [TOTAL] complete
+Remaining phases: [TOTAL - X]
 
 Next steps:
-1. Review the test results above
-2. Make any final adjustments to workspace/ files
-3. Run: /clawd-deploy
+1. Run: /clawd-plan-phase [X+1]
+2. Continue developing remaining phases
+
+⚠️ Do NOT deploy yet - [Y] phases still remaining in PRD.
+```
+
+**If ALL phases complete** (current == total):
+```
+🎉 ALL phases validated!
+
+All [TOTAL] phases complete and tested.
+
+Your workspace/ folder is fully validated and ready for production.
+
+Next steps:
+1. Final review of workspace/ files
+2. Run: /clawd-deploy
 
 The deployment will copy workspace/ to your production Mac Mini.
 ```
@@ -283,7 +376,7 @@ X tests failed. Review the failures above and:
 2. Edit workspace/skills/ to fix skill problems
 3. Run: /clawd-validate-phase (to re-test)
 
-Do NOT deploy until all tests pass.
+Do NOT proceed until all tests pass.
 ```
 
 ---

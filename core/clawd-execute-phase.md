@@ -501,6 +501,35 @@ Create JSON data files for persistence:
 
 ## After Execution
 
+### Update STATE.md
+
+**CRITICAL**: Update `docs/STATE.md` to track progress:
+
+1. Update the YAML frontmatter:
+   - `status: executed`
+   - `last_updated: [current date]`
+
+2. Update the Phase Progress table:
+   - Set Phase [X] Status to `executed`
+   - Set Phase [X] Executed date to current date
+
+3. Add to Activity Log:
+```markdown
+### [DATE] - Phase [X] Executed
+- Implementation complete in workspace/
+- Files modified: [list]
+- Skills created: [list if any]
+- Next: Run `/clawd-validate-phase`
+```
+
+4. Update Next Action:
+```markdown
+## Next Action
+**Run**: `/clawd-validate-phase`
+```
+
+---
+
 ### Summary Output
 
 ```

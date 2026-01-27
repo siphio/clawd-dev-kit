@@ -21,14 +21,26 @@ Perfect for building "AI employees" that run 24/7 on your Mac Mini.
 
 ---
 
+## 🆕 Recent Updates
+
+- **STATE.md Tracking** - Persistent progress tracking across sessions. No more wrong recommendations after `/clear`!
+- **Context Efficiency** - Strict character limits on workspace files to minimize token costs
+- **TOOLS.md Clarified** - Now correctly used for environment notes only (not tool definitions)
+- **Auto Dependency Install** - Deploy command automatically installs skill dependencies on Mac Mini
+- **Plans Folder** - Phase plans now organized in `docs/plans/` subfolder
+- **Condensed Documents** - PRD max 1000 lines, plans max 700 lines
+
+---
+
 ## ✨ Features
 
 | Feature | Description |
 |---------|-------------|
 | 🔄 **Human-in-the-Loop** | Validation checkpoints at every phase - you stay in control |
 | 🤖 **Sub-Agent Research** | Parallel Archon RAG queries for deep technology research |
-| 🚀 **Auto Environment Setup** | Automatically spins up `~/clawd-dev/` when needed |
-| 📚 **Archon MCP Integration** | Query documentation for any API or MCP server |
+| 📊 **Progress Tracking** | `STATE.md` tracks exactly where you are across sessions |
+| 💨 **Context Efficient** | Strict character limits prevent token bloat |
+| 🚀 **Auto Dependency Install** | Deploy command installs skill dependencies on Mac Mini |
 | ⏪ **One-Command Rollback** | Safely undo deployments without touching your Mini |
 | 🔐 **Secure Config** | SSH keys and credentials in `.env` (never committed) |
 | 💻 **Dual Platform** | Full support for macOS and WSL2/Linux development |
@@ -87,17 +99,26 @@ your-capability-project/
 - Deploy by simply copying the `workspace/` folder
 - Clear separation between "what we planned" and "what runs"
 
-### Workspace File Limits (Context Efficiency)
+### Document Limits (Context Efficiency)
 
-**Every character in workspace files costs tokens on EVERY conversation.**
+ClawdDev Kit enforces strict limits to prevent context bloat and reduce token costs.
 
+**Planning Documents (line limits):**
+| Document | Target | Maximum |
+|----------|--------|---------|
+| PRD.md | 600-800 | **1,000 lines** |
+| plan-phase-X.md | 550-650 | **700 lines** |
+
+**Workspace Files (character limits - loaded EVERY conversation):**
 | File | Purpose | Max Chars |
 |------|---------|-----------|
-| IDENTITY.md | Name, emoji, one-liner | 500 |
-| SOUL.md | Terse behavioral rules | 3,000 |
-| TOOLS.md | Environment notes only | 1,500 |
-| AGENTS.md | Operating instructions | 2,000 |
-| SKILL.md | Skill docs (on-demand) | 5,000 |
+| IDENTITY.md | Name, emoji, one-liner | **500** |
+| SOUL.md | Terse behavioral rules | **3,000** |
+| TOOLS.md | Environment notes only* | **1,500** |
+| AGENTS.md | Operating instructions | **2,000** |
+| SKILL.md | Skill docs (on-demand) | **5,000** |
+
+*⚠️ **TOOLS.md is NOT for tool definitions** - that goes in SKILL.md. TOOLS.md is only for environment-specific notes like camera names, SSH hosts, device nicknames.
 
 **Philosophy: Minimum viable context - everything needed, nothing extra.**
 
@@ -375,6 +396,32 @@ All state is file-based and survives restarts:
 
 - **MEMORY.md** → Long-term facts, preferences, configurations
 - **memory/YYYY-MM-DD.md** → Daily activity logs
+
+### Progress Tracking (STATE.md)
+
+`docs/STATE.md` tracks your development progress across sessions:
+
+```yaml
+---
+capability: my-capability
+current_phase: 2
+total_phases: 4
+status: validated  # initialized | planned | executed | validated
+last_updated: 2024-01-28
+---
+```
+
+When you `/clear` and `/clawd-prime` again, it reads STATE.md to know exactly where you left off - no more wrong recommendations!
+
+### Deployment with Dependencies
+
+When you run `/clawd-deploy`, it automatically:
+1. Copies workspace/ to your Mac Mini via SSH
+2. **Installs npm dependencies** for each skill with package.json
+3. Checks that required binaries are available
+4. Restarts the Clawdbot daemon
+
+No need to manually SSH in and install dependencies - it's fully automated.
 
 ---
 

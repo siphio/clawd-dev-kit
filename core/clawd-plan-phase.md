@@ -491,6 +491,40 @@ If browsing fails, fall back to known patterns: Skills are Markdown teaching fil
 
 ---
 
+### Sub-Agent 6: API Freshness Analyst
+
+Role: For any external APIs mentioned in the PRD (e.g., Grok/xAI, Twitter, YouTube, OpenAI), fetch and summarize the CURRENT official endpoints, models, parameters, auth methods, and recent deprecations/changelog.
+
+Inputs:
+- PRD summary and any mentioned APIs.
+
+Steps:
+1. Detect APIs from PRD keywords (e.g., "Grok", "xAI API", "Twitter", "YouTube transcript").
+2. If none detected, skip and output "No external APIs detected."
+3. For each detected API:
+   - Use Archon RAG + browse official docs (e.g., x.ai/api, dev.twitter.com, developers.google.com/youtube).
+   - Prioritize pages: /docs, /api, /changelog, dated after Dec 2025.
+   - Summarize tersely:
+     - Current endpoint(s) and HTTP method.
+     - Required headers/auth (e.g., Bearer token).
+     - Key parameters/models.
+     - Any deprecations since Dec 2025.
+     - Source URL and date.
+4. Flag mismatches with common outdated patterns (e.g., old /v1/chat/completions).
+
+Output format:
+```
+**API Freshness Report**
+- API: Grok/xAI
+  - Current: POST /v1/responses, model: grok-4-fast
+  - Auth: Bearer $XAI_API_KEY
+  - Deprecations: /v1/chat/completions removed Dec 2025
+  - Source: x.ai/api (Jan 2026)
+- Recommendations: Update all calls to new endpoint; use tools array for search.
+```
+
+---
+
 ## Phase 4: Research Synthesis (Main Agent)
 
 ### 4.1 Wait for All Sub-Agents

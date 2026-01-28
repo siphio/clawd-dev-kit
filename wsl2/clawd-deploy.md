@@ -75,10 +75,10 @@ echo "   Workspace: $CLAWD_MINI_WORKSPACE"
 
 Same as macOS version.
 
-### Step 3: Test SSH Connection (from WSL2)
+### Step 3: Connectivity Pre-Check (Tailscale Recommended)
 
 ```bash
-echo "📋 Testing SSH connection to Mac Mini from WSL2..."
+echo "📋 Pre-deployment connectivity check from WSL2..."
 
 # Expand SSH key path
 ssh_key="${CLAWD_MINI_SSH_KEY/#\~/$HOME}"
@@ -86,24 +86,48 @@ ssh_key="${CLAWD_MINI_SSH_KEY/#\~/$HOME}"
 # WSL2-specific: Ensure SSH key permissions are correct
 chmod 600 "$ssh_key" 2>/dev/null
 
-# Test connection
-if ssh -i "$ssh_key" -o ConnectTimeout=10 -o BatchMode=yes \
-    "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" "echo 'SSH connection OK'" 2>/dev/null; then
-    echo "✅ SSH connection successful"
+# Test ping first
+if ping -c 1 -W 3 "$CLAWD_MINI_HOST" >/dev/null 2>&1; then
+    echo "✅ Host $CLAWD_MINI_HOST is reachable"
 else
-    echo "❌ ERROR: Cannot connect to Mac Mini"
-    echo "   Host: $CLAWD_MINI_HOST"
-    echo "   User: $CLAWD_MINI_USER"
-    echo "   Key: $ssh_key"
+    echo "❌ Cannot reach $CLAWD_MINI_HOST"
     echo ""
-    echo "   WSL2-Specific Troubleshooting:"
-    echo "   1. Is the Mac Mini on the same network?"
-    echo "   2. Can you ping the Mini? ping $CLAWD_MINI_HOST"
-    echo "   3. Is the SSH key in WSL2 filesystem (not /mnt/c/)?"
-    echo "   4. Check key permissions: chmod 600 $ssh_key"
-    echo "   5. Is SSH enabled on Mini? (System Preferences > Sharing > Remote Login)"
+    echo "Tailscale Troubleshooting (Recommended for WSL2):"
+    echo "  1. Install Tailscale on WSL2: curl -fsSL https://tailscale.com/install.sh | sh"
+    echo "  2. Check status: tailscale status"
+    echo "  3. Ensure Mac Mini is also on Tailscale"
+    echo "  4. Set CLAWD_MINI_HOST to Mac Mini's Tailscale name"
     exit 1
 fi
+
+# Test SSH with auto host-key cleanup
+echo "🔑 Testing SSH connection..."
+
+if ! ssh -i "$ssh_key" -o ConnectTimeout=10 -o BatchMode=yes \
+    -o StrictHostKeyChecking=accept-new \
+    "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" "echo 'SSH connection OK'" 2>/dev/null; then
+
+    echo "⚠️  SSH failed. Attempting host key cleanup..."
+    ssh-keygen -R "$CLAWD_MINI_HOST" 2>/dev/null || true
+
+    if ! ssh -i "$ssh_key" -o ConnectTimeout=10 -o BatchMode=yes \
+        -o StrictHostKeyChecking=accept-new \
+        "${CLAWD_MINI_USER}@${CLAWD_MINI_HOST}" "echo 'SSH connection OK'" 2>/dev/null; then
+        echo "❌ ERROR: Cannot connect to Mac Mini"
+        echo ""
+        echo "Tailscale Troubleshooting:"
+        echo "  1. On WSL2: tailscale status"
+        echo "  2. On Mac Mini: tailscale status"
+        echo "  3. Ensure both show 'online'"
+        echo ""
+        echo "WSL2-Specific:"
+        echo "  - SSH key must be in WSL2 filesystem (not /mnt/c/)"
+        echo "  - Key permissions: chmod 600 $ssh_key"
+        exit 1
+    fi
+fi
+
+echo "✅ SSH connection verified"
 ```
 
 ### Steps 4-11: Same as macOS version

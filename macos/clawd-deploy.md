@@ -93,23 +93,48 @@ fi
 echo "✅ workspace/ folder verified"
 ```
 
-### 4. Test SSH Connection
+### 4. Connectivity Pre-Check (Tailscale Recommended)
 
 ```bash
-echo "🔌 Testing SSH connection to Mac Mini..."
+echo "🔌 Pre-deployment connectivity check..."
 
-ssh -i "$CLAWD_MINI_SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes \
-    "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" "echo 'Connection successful'" || {
-    echo "❌ Cannot connect to Mac Mini."
+# Test ping first
+if ping -c 1 -W 3 "$CLAWD_MINI_HOST" >/dev/null 2>&1; then
+    echo "✅ Host $CLAWD_MINI_HOST is reachable"
+else
+    echo "❌ Cannot reach $CLAWD_MINI_HOST"
     echo ""
-    echo "Check:"
-    echo "  - Host: $CLAWD_MINI_HOST"
-    echo "  - User: $CLAWD_MINI_USER"
-    echo "  - SSH Key: $CLAWD_MINI_SSH_KEY"
-    echo ""
-    echo "Try manually: ssh -i $CLAWD_MINI_SSH_KEY $CLAWD_MINI_USER@$CLAWD_MINI_HOST"
+    echo "Tailscale Troubleshooting:"
+    echo "  1. Check status on both machines: tailscale status"
+    echo "  2. Ensure both are logged in and online"
+    echo "  3. Verify CLAWD_MINI_HOST is your Tailscale node name"
+    echo "  4. Try: tailscale ping $CLAWD_MINI_HOST"
     exit 1
-}
+fi
+
+# Test SSH with auto host-key cleanup
+echo "🔑 Testing SSH connection..."
+
+if ! ssh -i "$CLAWD_MINI_SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes \
+    -o StrictHostKeyChecking=accept-new \
+    "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" "echo 'Connection successful'" 2>/dev/null; then
+
+    echo "⚠️  SSH failed. Attempting host key cleanup..."
+    ssh-keygen -R "$CLAWD_MINI_HOST" 2>/dev/null || true
+
+    if ! ssh -i "$CLAWD_MINI_SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes \
+        -o StrictHostKeyChecking=accept-new \
+        "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" "echo 'Connection successful'" 2>/dev/null; then
+        echo "❌ Cannot connect to Mac Mini."
+        echo ""
+        echo "Tailscale Troubleshooting:"
+        echo "  1. On dev machine: tailscale status"
+        echo "  2. On Mac Mini: tailscale status"
+        echo "  3. Ensure both show 'online'"
+        echo "  4. Check: $CLAWD_MINI_HOST"
+        exit 1
+    fi
+fi
 
 echo "✅ SSH connection verified"
 ```
@@ -210,36 +235,55 @@ ENDSSH
 echo "✅ Skill dependencies installed"
 ```
 
-### Check for Required Binaries
+### Install Dependencies from SKILL.md Metadata
 
 ```bash
-echo "🔍 Checking required binaries on Mac Mini..."
+echo "📦 Installing dependencies from SKILL.md metadata..."
 
 ssh -i "$CLAWD_MINI_SSH_KEY" "$CLAWD_MINI_USER@$CLAWD_MINI_HOST" << 'ENDSSH'
-    # Check common required binaries
-    MISSING=""
+    cd ~/clawd/skills
 
-    command -v node >/dev/null || MISSING="$MISSING node"
-    command -v npm >/dev/null || MISSING="$MISSING npm"
-
-    # Check skill-specific requirements from SKILL.md metadata
-    for skill_dir in ~/clawd/skills/*/; do
+    for skill_dir in */; do
         if [ -f "$skill_dir/SKILL.md" ]; then
-            # Extract bins from metadata if present
-            BINS=$(grep -o '"bins":\[[^]]*\]' "$skill_dir/SKILL.md" 2>/dev/null | grep -o '"[^"]*"' | tr -d '"' || true)
-            for bin in $BINS; do
+            skill_name=$(basename "$skill_dir")
+            echo "Processing: $skill_name"
+
+            # Extract python packages from metadata
+            PYTHON_PKGS=$(grep -A20 'requires:' "$skill_dir/SKILL.md" | grep -A5 'python:' | grep -o '"[^"]*"' | tr -d '"' 2>/dev/null || true)
+            if [ -n "$PYTHON_PKGS" ]; then
+                echo "  Installing python packages..."
+                for pkg in $PYTHON_PKGS; do
+                    pip3 install "$pkg" --quiet 2>/dev/null || echo "    ⚠️ Failed: $pkg"
+                done
+            fi
+
+            # Extract system binaries from metadata
+            SYSTEM_BINS=$(grep -A20 'requires:' "$skill_dir/SKILL.md" | grep -A5 'system:' | grep -o '"[^"]*"' | tr -d '"' 2>/dev/null || true)
+            MISSING_BINS=""
+            for bin in $SYSTEM_BINS; do
                 if ! command -v "$bin" >/dev/null 2>&1; then
-                    MISSING="$MISSING $bin"
+                    MISSING_BINS="$MISSING_BINS $bin"
                 fi
             done
+
+            if [ -n "$MISSING_BINS" ]; then
+                echo "  Installing system binaries:$MISSING_BINS"
+                for bin in $MISSING_BINS; do
+                    brew install "$bin" 2>/dev/null || echo "    ⚠️ Install manually: brew install $bin"
+                done
+            fi
         fi
     done
 
+    # Check common required binaries
+    MISSING=""
+    command -v node >/dev/null || MISSING="$MISSING node"
+    command -v npm >/dev/null || MISSING="$MISSING npm"
+
     if [ -n "$MISSING" ]; then
-        echo "⚠️  Missing binaries:$MISSING"
-        echo "   Install them on Mac Mini before using related skills"
+        echo "⚠️  Missing core binaries:$MISSING"
     else
-        echo "✅ All required binaries available"
+        echo "✅ All dependencies installed"
     fi
 ENDSSH
 ```

@@ -29,6 +29,32 @@ Reference this section in every phase. Violations should be flagged early by /cl
 
 ---
 
+## EXTERNAL API USAGE – ALWAYS VERIFY FRESHNESS
+
+When any external API (Grok/xAI, Twitter/X, YouTube, etc.) appears in the PRD or plans:
+- ALWAYS start research with the current official documentation and changelog.
+- Never rely on cached or outdated knowledge of endpoints, parameters, models, or auth methods.
+- The /clawd-plan-phase command now includes an automatic API Freshness Sub-Agent to enforce this.
+
+---
+
+## DEPENDENCY DECLARATION
+
+All skills MUST declare dependencies in SKILL.md frontmatter:
+
+```yaml
+metadata:
+  clawdbot:
+    requires:
+      env: ["XAI_API_KEY", "TWITTER_TOKEN"]  # list required env vars
+      python: ["tweepy>=4.14", "yt-dlp", "youtube_transcript_api"]
+      system: ["ffmpeg"]  # brew/apt installable
+```
+
+This enables automatic validation and installation during deploy.
+
+---
+
 ## 1. Core Philosophy
 
 ### 1.1 Prompt-Orchestration First, Code Second

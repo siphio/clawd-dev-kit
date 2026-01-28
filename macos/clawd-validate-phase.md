@@ -29,6 +29,127 @@ YOUR PROJECT                         TEST INSTANCE
 
 ---
 
+## Pre-Validation: Connectivity & Dependency Checks
+
+Before any testing:
+
+### 1. Connectivity Pre-Check (Tailscale Recommended)
+
+```bash
+echo "🔌 Testing connectivity to Mac Mini..."
+
+# Load .env for host info
+if [ -f ./.env ]; then
+    source ./.env
+fi
+
+# Use Tailscale hostname if configured, otherwise fall back to local
+TARGET_HOST="${CLAWD_MINI_HOST:-macmini.local}"
+
+# Test ping
+if ping -c 1 -W 3 "$TARGET_HOST" >/dev/null 2>&1; then
+    echo "✅ Host $TARGET_HOST is reachable"
+else
+    echo "❌ Cannot reach $TARGET_HOST"
+    echo ""
+    echo "Troubleshooting:"
+    echo "  1. Check Tailscale status: tailscale status"
+    echo "  2. Ensure both machines are online in Tailscale"
+    echo "  3. Try: ping $TARGET_HOST"
+    echo ""
+    echo "If using Tailscale, ensure CLAWD_MINI_HOST is set to your Tailscale node name"
+    exit 1
+fi
+
+# Test SSH (if key configured)
+if [ -n "$CLAWD_MINI_SSH_KEY" ] && [ -n "$CLAWD_MINI_USER" ]; then
+    echo "🔑 Testing SSH connection..."
+
+    # Handle host key issues automatically
+    if ! ssh -i "$CLAWD_MINI_SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes \
+        -o StrictHostKeyChecking=accept-new \
+        "$CLAWD_MINI_USER@$TARGET_HOST" "echo 'SSH OK'" 2>/dev/null; then
+
+        echo "⚠️  SSH connection failed. Attempting host key cleanup..."
+        ssh-keygen -R "$TARGET_HOST" 2>/dev/null || true
+
+        if ! ssh -i "$CLAWD_MINI_SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "$CLAWD_MINI_USER@$TARGET_HOST" "echo 'SSH OK'" 2>/dev/null; then
+            echo "❌ SSH to Mac Mini failed."
+            echo ""
+            echo "Check Tailscale status on both machines:"
+            echo "  tailscale status"
+            echo ""
+            echo "Ensure both machines are online and can reach each other."
+            exit 1
+        fi
+    fi
+    echo "✅ SSH connection verified"
+fi
+```
+
+### 2. Dependency Validation
+
+```bash
+echo "📦 Validating skill dependencies..."
+
+# Parse all SKILL.md files for metadata.requires
+for skill_dir in ./workspace/skills/*/; do
+    if [ -f "$skill_dir/SKILL.md" ]; then
+        skill_name=$(basename "$skill_dir")
+        echo "Checking: $skill_name"
+
+        # Extract requires from SKILL.md metadata (YAML frontmatter)
+        # Check env vars
+        ENV_VARS=$(grep -A20 'requires:' "$skill_dir/SKILL.md" | grep -A5 'env:' | grep -o '"[^"]*"' | tr -d '"' || true)
+        for var in $ENV_VARS; do
+            if [ -z "${!var:-}" ]; then
+                echo "  ⚠️  Missing env var: $var"
+                MISSING_DEPS=1
+            else
+                echo "  ✅ env: $var"
+            fi
+        done
+
+        # Check python packages
+        PYTHON_PKGS=$(grep -A20 'requires:' "$skill_dir/SKILL.md" | grep -A5 'python:' | grep -o '"[^"]*"' | tr -d '"' || true)
+        for pkg in $PYTHON_PKGS; do
+            pkg_name=$(echo "$pkg" | cut -d'>' -f1 | cut -d'=' -f1)
+            if python3 -c "import $pkg_name" 2>/dev/null; then
+                echo "  ✅ python: $pkg_name"
+            else
+                echo "  ⚠️  Missing python package: $pkg"
+                MISSING_DEPS=1
+            fi
+        done
+
+        # Check system binaries
+        SYSTEM_BINS=$(grep -A20 'requires:' "$skill_dir/SKILL.md" | grep -A5 'system:' | grep -o '"[^"]*"' | tr -d '"' || true)
+        for bin in $SYSTEM_BINS; do
+            if command -v "$bin" >/dev/null 2>&1; then
+                echo "  ✅ system: $bin"
+            else
+                echo "  ⚠️  Missing binary: $bin"
+                MISSING_DEPS=1
+            fi
+        done
+    fi
+done
+
+if [ "${MISSING_DEPS:-0}" -eq 1 ]; then
+    echo ""
+    echo "❌ Missing dependencies detected. Install them before proceeding."
+    echo "   For python: pip install <package>"
+    echo "   For system: brew install <binary>"
+    exit 1
+fi
+
+echo "✅ All dependencies satisfied"
+```
+
+---
+
 ## Pre-Validation Checklist
 
 ### Verify workspace/ exists and has required files:

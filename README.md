@@ -326,6 +326,27 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_clawd_mini -N ""
 ssh-copy-id -i ~/.ssh/id_ed25519_clawd_mini.pub user@macmini.local
 ```
 
+### Remote Deployment (Tailscale Recommended)
+
+For deploying from anywhere (e.g., while traveling), use Tailscale:
+
+1. Install on Mac Mini and dev machine: [tailscale.com](https://tailscale.com)
+2. Run `tailscale status` to see your node names
+3. Set `CLAWD_MINI_HOST` to your Mac Mini's Tailscale node name
+
+```bash
+# Example .env with Tailscale
+CLAWD_MINI_HOST=macmini-home  # Your Mac Mini's Tailscale name
+CLAWD_MINI_USER=your-username
+CLAWD_MINI_SSH_KEY=~/.ssh/id_ed25519_clawd_mini
+```
+
+**Benefits:**
+- Secure, encrypted connection without port forwarding
+- Works from any network (home, office, coffee shop)
+- Stable hostname that never changes
+- Connectivity checks are now automatic in validate/deploy
+
 ---
 
 ## 📖 Command Reference
@@ -351,7 +372,18 @@ ssh-copy-id -i ~/.ssh/id_ed25519_clawd_mini.pub user@macmini.local
 - Spawns sub-agents for parallel research
 - Queries Archon RAG for API docs, MCP servers, patterns
 - **Automatic exemplar skill analysis** from official Moltbot repo (prevents tool-calling misunderstandings)
+- **API freshness analysis** to prevent deprecated endpoint usage
 - Generates detailed implementation plan in docs/plans/
+
+**`/clawd-validate-phase`** - Validation with auto-checks
+- **Auto connectivity check** (ping + SSH with Tailscale support)
+- **Dependency validation** from SKILL.md metadata
+- Copies workspace/ → ~/clawd-dev/ and runs tests
+
+**`/clawd-deploy`** - Production deployment with auto-checks
+- **Auto connectivity pre-check** with Tailscale troubleshooting
+- **Auto dependency installation** (python packages, system binaries)
+- Copies workspace/ → Mac Mini via SSH
 
 ---
 

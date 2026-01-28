@@ -176,6 +176,185 @@ touch ./tests/.gitkeep
 
 ---
 
+## Step 1b: Generate docs/CLAUDE.md (Global Rules for Claude Code)
+
+**CRITICAL**: This file is auto-loaded by Claude Code every session. It provides persistent guidance for Clawdbot/Moltbot capability development.
+
+```bash
+cat > ./docs/CLAUDE.md << 'CLAUDEEOF'
+# CLAWDDEV KIT GLOBAL RULES & BEST PRACTICES FOR CLAWDBOT/MOLTBOT CAPABILITIES
+
+You are Claude developing Moltbot/Clawdbot capabilities with ClawdDev Kit. Follow these rules exactly for prompt-orchestration-first, human-in-the-loop development.
+
+---
+
+## CORE PHILOSOPHY
+
+- **Human validates every phase** — no unsupervised changes.
+- **Prompt-orchestration first**: SOUL.md rules over code.
+- **Proactivity as first-class** (cron, heartbeats, autonomous behavior).
+- **Persistence via file-based memory** (survives daemon restarts).
+- **Context efficiency**: Strict character limits on workspace files.
+
+---
+
+## CLAWDBOT / MOLTBOT SKILL ARCHITECTURE – MUST FOLLOW
+
+**Clawdbot/Moltbot capabilities are prompt-orchestration first, not code/tool-calling centric.** Skills teach the agent behaviors via natural language instructions in SKILL.md, not by registering function schemas or tool calls.
+
+### Key Principles
+
+- **Skills = Teaching Documents**: The core is `SKILL.md` — a Markdown file with frontmatter (metadata), procedural steps, and concrete command examples. The agent loads it on-demand and follows the taught patterns using built-in tools (exec, shell, curl, browser, python, etc.).
+- **No Native Tool Calling for Custom Skills**: NEVER plan JSON tool schemas, function definitions, or direct calls like `scan_ai_news(params)`. Moltbot has no OpenAI-style tool registry for custom skills.
+- **Invocation Patterns**:
+  - Slash commands: SOUL.md says "Invoke /skill_name" → agent runs the skill's instructions.
+  - Explicit exec/shell/curl: "Use exec to run python /skills/script.py --args" or "curl -X POST ...".
+  - Step-by-step natural language: Numbered procedures that explicitly use built-ins.
+- **Code is Optional Helper Only**: Any scripts in skills/ folders are run ONLY when SKILL.md explicitly tells the agent via exec. No auto-discovery or index.ts tool exposure.
+
+### Common Anti-Patterns to Avoid
+
+⚠️ **WARNING**: These cause deployment failures:
+- Referencing imaginary tools in SOUL.md (e.g., "use scan_ai_news tool").
+- Building TypeScript/Node tools expecting automatic registration.
+- Writing code-heavy logic without clear prompt wrappers.
+- Assuming OpenAI-style function calling or JSON schemas.
+
+### Best Practices
+
+- Always declare dependencies in frontmatter metadata (env vars, python packages, system bins).
+- Include concrete command examples and guardrails.
+- Tie proactivity (cron, heartbeats) via SOUL.md triggers.
+- Reference exemplar skills from Moltbot repo: weather, slack, github, summarize.
+
+---
+
+## EXTERNAL API USAGE – ALWAYS VERIFY FRESHNESS
+
+When any external API (Grok/xAI, Twitter/X, YouTube, etc.) appears in the PRD or plans:
+
+- **ALWAYS start research with the current official documentation and changelog.**
+- **Never rely on cached or outdated knowledge** of endpoints, parameters, models, or auth methods.
+- The /clawd-plan-phase command includes an automatic API Freshness Sub-Agent.
+- Flag any references to deprecated endpoints (e.g., old /v1/chat/completions for xAI).
+
+---
+
+## DEPENDENCY DECLARATION
+
+All skills MUST declare dependencies in SKILL.md frontmatter:
+
+```yaml
+metadata:
+  clawdbot:
+    requires:
+      env: ["XAI_API_KEY", "TWITTER_TOKEN"]  # required env vars
+      python: ["tweepy>=4.14", "yt-dlp"]     # pip packages
+      system: ["ffmpeg", "curl"]             # brew/apt binaries
+```
+
+This enables automatic validation during /clawd-validate-phase and auto-install during /clawd-deploy.
+
+---
+
+## CONTEXT EFFICIENCY (CRITICAL)
+
+**Every character in workspace files costs tokens on EVERY conversation.**
+
+### Workspace Files (character limits):
+| File | Purpose | Max Chars |
+|------|---------|-----------|
+| `IDENTITY.md` | Name, emoji, one-liner | **500** |
+| `SOUL.md` | Terse behavioral rules only | **3,000** |
+| `TOOLS.md` | Environment notes only | **1,500** |
+| `AGENTS.md` | Operating instructions | **2,000** |
+| `USER.md` | User preferences | **500** |
+| `SKILL.md` | Skill docs (on-demand) | **5,000** |
+
+### Planning Documents (line limits):
+| Document | Target | Maximum |
+|----------|--------|---------|
+| `PRD.md` | 600-800 | **1,000 lines** |
+| `plan-phase-X.md` | 550-650 | **700 lines** |
+
+**Philosophy: Minimum viable context — everything needed, nothing extra.**
+
+---
+
+## FILE STRUCTURE
+
+```
+./
+├── docs/                    # PLANNING (NOT deployed)
+│   ├── PRD.md               # Requirements
+│   ├── STATE.md             # Progress tracking (SOURCE OF TRUTH)
+│   ├── CLAUDE.md            # This file (Claude Code rules)
+│   └── plans/               # Phase plans
+│
+└── workspace/               # LIVE AGENT (deployed to Clawdbot)
+    ├── SOUL.md              # Behavioral rules
+    ├── TOOLS.md             # Environment notes
+    ├── skills/              # Custom skills (SKILL.md files)
+    └── memory/              # Agent memory
+```
+
+**Key distinction:**
+- `docs/` = Blueprint (planning, NOT deployed)
+- `workspace/` = The house (live config, DEPLOYED)
+
+---
+
+## WORKFLOW COMMANDS
+
+| Command | Purpose |
+|---------|---------|
+| `/clawd-prime` | Load context, determine current state and next step |
+| `/clawd-plan-phase N` | Deep research + planning (spawns sub-agents) |
+| `/clawd-execute-phase N` | Implement the plan in workspace/ |
+| `/clawd-validate-phase` | Test by copying workspace/ to ~/clawd-dev/ |
+| `/clawd-deploy` | Deploy workspace/ to production Mac Mini |
+
+---
+
+## BEST PRACTICES FOR ALL PHASES
+
+1. **Flag tool-calling assumptions early** — if PRD mentions "tool calls", "function schemas", "expose as tool", output a warning.
+2. **Use /skill_name or explicit exec/curl/browser/python** — never imaginary tools.
+3. **Declare all requires in SKILL.md metadata** — env, python, system.
+4. **Escalate approvals/actions to human** — no autonomous destructive actions.
+5. **Leverage sub-agents in plan-phase** for exemplar analysis and API freshness.
+6. **Check STATE.md** before recommending next steps.
+7. **Validate line/char limits** before saving documents.
+
+---
+
+## PROJECT-SPECIFIC CONTEXT
+
+- **Capability**: [CAPABILITY_NAME]
+- **PRD Location**: ./docs/PRD.md
+- **Current State**: See ./docs/STATE.md
+
+**Key Reminder**: Always reference exemplar skill patterns (weather, slack, github) and use API freshness reports for external integrations.
+
+---
+
+**⚠️ Deviations from these rules must be flagged and corrected immediately.**
+CLAUDEEOF
+
+echo "✅ Generated docs/CLAUDE.md with comprehensive global rules and best practices."
+```
+
+After generating, replace `[CAPABILITY_NAME]` with the actual capability name:
+
+```bash
+# Update CLAUDE.md with capability name
+CAPABILITY_NAME="[Extract from user input or PRD]"
+sed -i '' "s/\[CAPABILITY_NAME\]/$CAPABILITY_NAME/g" ./docs/CLAUDE.md 2>/dev/null || \
+sed -i "s/\[CAPABILITY_NAME\]/$CAPABILITY_NAME/g" ./docs/CLAUDE.md
+```
+
+---
+
 ## Step 2: Initialize workspace/ Files
 
 ### workspace/IDENTITY.md
@@ -653,6 +832,7 @@ Structure created:
 ├── docs/                        # Planning (NOT deployed)
 │   ├── PRD.md                   (XX KB)
 │   ├── STATE.md                 (XX KB) - Progress tracking
+│   ├── CLAUDE.md                (XX KB) - Global rules for Claude Code ⭐
 │   ├── SOUL-additions.md        (XX KB) - Reference copy
 │   ├── TOOLS-additions.md       (XX KB) - Reference copy
 │   ├── memory-schema.md         (XX KB)
@@ -671,6 +851,9 @@ Structure created:
 │   └── media/                   (empty)
 │
 └── README.md
+
+Generated docs/CLAUDE.md with comprehensive global rules and best practices.
+Claude Code will auto-load this file every session for persistent guidance.
 
 Current State (from docs/STATE.md):
 - Phase: 0 of X

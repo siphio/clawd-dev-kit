@@ -4,6 +4,31 @@
 
 ---
 
+## CLAWDBOT / MOLTBOT SKILL ARCHITECTURE – MUST-READ BEFORE PLANNING ANY CAPABILITY
+
+Clawdbot/Moltbot capabilities are **prompt-orchestration first**, not code/tool-calling centric. Skills teach the agent behaviors via natural language instructions in SKILL.md, not by registering function schemas or tool calls.
+
+### Key Principles
+- **Skills = Teaching Documents**: The core is `SKILL.md` — a Markdown file with frontmatter (metadata), procedural steps, and concrete command examples. The  agent loads it on-demand and follows the taught patterns using built-in tools (exec, shell, curl, browser, python, etc.).
+- **No Native Tool Calling for Custom Skills**: NEVER plan JSON tool schemas, function definitions, or direct calls like `scan_ai_news(params)`. Moltbot has no OpenAI-style tool registry for custom skills.
+- **Invocation Patterns**:
+  - Slash commands: SOUL.md says "Invoke /skill_name" → agent runs the skill's instructions.
+  - Explicit exec/shell/curl: "Use exec to run python /skills/script.py --args" or "curl -X POST ...".
+  - Step-by-step natural language: Numbered procedures that explicitly use built-ins.
+- **Code is Optional Helper Only**: Any scripts in skills/ folders are run ONLY when SKILL.md explicitly tells the agent via exec. No auto-discovery or index.ts tool exposure.
+- **Common Anti-Patterns to Avoid**:
+  - Referencing imaginary tools in SOUL.md (e.g., "use scan_ai_news tool").
+  - Building TypeScript/Node tools expecting automatic registration.
+  - Writing code-heavy logic without clear prompt wrappers.
+- **Best Practices**:
+  - Always declare dependencies in frontmatter metadata (env vars, python packages, system bins).
+  - Include concrete command examples and guardrails.
+  - Tie proactivity (cron, heartbeats) via SOUL.md triggers.
+
+Reference this section in every phase. Violations should be flagged early by /clawd-prime and validation steps.
+
+---
+
 ## 1. Core Philosophy
 
 ### 1.1 Prompt-Orchestration First, Code Second

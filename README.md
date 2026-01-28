@@ -350,6 +350,7 @@ ssh-copy-id -i ~/.ssh/id_ed25519_clawd_mini.pub user@macmini.local
 **`/clawd-plan-phase`** - Heavy research (Archon + sub-agents)
 - Spawns sub-agents for parallel research
 - Queries Archon RAG for API docs, MCP servers, patterns
+- **Automatic exemplar skill analysis** from official Moltbot repo (prevents tool-calling misunderstandings)
 - Generates detailed implementation plan in docs/plans/
 
 ---

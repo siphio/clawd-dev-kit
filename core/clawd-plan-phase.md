@@ -452,6 +452,45 @@ Task(
 
 ---
 
+### Sub-Agent 5: Skill Exemplar Analyst
+
+Role: Analyze 3-5 existing validated skills from the official Moltbot repo (https://github.com/moltbot/moltbot/tree/main/skills) that are most similar to the target capability. Focus on patterns to emulate: metadata, instruction style, tool usage (exec/curl/bash/JSON), invocation, guardrails. NEVER assume tool-calling schemas.
+
+Inputs:
+- Capability name and PRD summary.
+- Target phase (for context).
+
+Steps:
+1. Browse https://github.com/moltbot/moltbot/tree/main/skills to get the current list of skills.
+2. Select 3-5 most relevant based on similarity:
+   - Match keywords from PRD (e.g., weather/news → weather, blogwatcher, summarize; posting → slack, discord; API → github, openai-*).
+   - If no strong matches, pick diverse exemplars: weather (simple curl), slack (JSON actions), 1password (setup/guardrails), summarize (processing), github (API calls).
+3. For each selected skill:
+   - Fetch raw SKILL.md: https://raw.githubusercontent.com/moltbot/moltbot/main/skills/<skill-name>/SKILL.md
+   - Summarize tersely (<300 chars each):
+     - Metadata/requires (e.g., bins: ["curl"]).
+     - Key patterns: How instructions teach the agent (numbered steps, command examples).
+     - Tool usage: exec, curl, JSON actions, browser — explicit commands only.
+     - Invocation: How SOUL.md would reference (/skill_name) and what the agent runs.
+     - Guardrails/escalations.
+4. Overall insights:
+   - Common Moltbot patterns to follow.
+   - Anti-patterns to avoid (e.g., no function schemas, no imaginary tools).
+   - Recommendations for this capability's SKILL.md and SOUL-additions.md.
+
+Output format:
+```
+**Skill Exemplar Report**
+- Skill 1: weather — Metadata: requires curl. Teaches via curl examples for wttr.in. Agent runs exec curl...
+- Skill 2: ...
+- Key Patterns: All use explicit commands/JSON; metadata declares bins; guardrails prevent leaks.
+- Recommendations: Use curl/exec patterns; declare requires; reference via /skill_name in SOUL.
+```
+
+If browsing fails, fall back to known patterns: Skills are Markdown teaching files with metadata + command examples.
+
+---
+
 ## Phase 4: Research Synthesis (Main Agent)
 
 ### 4.1 Wait for All Sub-Agents

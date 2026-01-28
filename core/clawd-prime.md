@@ -244,3 +244,17 @@ Before proceeding:
 ❌ **No implementation** - That's for `/clawd-execute-phase`
 
 This command is purely about **understanding where you are** so you can make the right next move.
+
+---
+
+## Architecture Validation (MANDATORY)
+
+After loading all project files (PRD.md, STATE.md, workspace files, etc.):
+
+1. Provide a concise recap of the Clawdbot/Moltbot Skill Architecture from clawd-global-rules.md (focus on: skills are teaching documents, no custom tool calling, invocation via /skill_name or explicit exec/curl).
+
+2. Scan the PRD.md and any existing SOUL-additions.md / SKILL.md drafts:
+   - If they mention "tool calls", "function schemas", "expose as tool", "index.ts", or similar, output a prominent warning:
+     "⚠️ WARNING: PRD or drafts assume invalid skill architecture (tool-calling style). Revise to use prompt-orchestration teaching in SKILL.md with explicit exec/curl/browser steps and /skill_name invocations before proceeding."
+
+3. Always recommend: If in early phases, run /clawd-plan-phase which now includes automatic exemplar skill analysis.
